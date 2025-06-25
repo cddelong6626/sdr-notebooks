@@ -48,7 +48,7 @@ def plot_signal(*signals, n=None, ylabel=None, xlabel="n", title='Signal', xlim=
     if show: fig.show()
 
 # Plot signal constellation diagram
-def plot_constellation(signal, n_samples=10, ax=None, title="Constellation Plot"):
+def plot_constellation(signal, n_samples=20, ax=None, title="Constellation Plot"):
     """
     Display the constellation diagram of a signal
     """
@@ -74,7 +74,7 @@ def plot_constellation(signal, n_samples=10, ax=None, title="Constellation Plot"
 # Plot frequency spectrum of signal
 def plot_spectrum(signal, size=None, n_samples=None, Fs=1.0, window='hann', db=True, title='Spectrum', xlim=None, ylim=None, ax=None, dec_factor=None):
     """
-    Plot the frequecy spectrum of a signal
+    Plot the frequecy spectrum of a signal1
 
     signal: np array signal vector
     Fs: sampling rate for frequency axis values
@@ -166,3 +166,7 @@ def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
     return h
 
 
+def iir_lowpass(x, y_prev, alpha):
+    # 0 < alpha < 1
+    # lower alpha -> smoother output
+    return (1 - alpha) * y_prev + alpha * x
