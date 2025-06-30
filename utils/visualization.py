@@ -1,12 +1,15 @@
 
+### Visualization ###
+
+# spectrum, constillation, BER vs SNR
+# todo: make plotting big signals faster, improve complex signal handling
+# todo: make master function like visualize(signal, plots=("time", "fft", "constellation")) for quick subplots
+# todo: Also could make plot_together(plot1, plot2) type shi
+
+from numba import jit
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-
-# visualization (spectrum, constillation, BER vs SNR) and RRC filtering
-# todo: make plotting big signals faster, improve complex signal handling
-
-### Visualization ###
 
 
 def plot_signal(*signals, n=None, ylabel=None, xlabel="n", title='Signal', xlim=None, ylim=None, ax=None):
@@ -134,39 +137,3 @@ def plot_spectrum(signal, size=None, n_samples=None, Fs=1.0, window='hann', db=T
     if show: fig.show()
 
 
-
-
-### Filtering ###
-
-
-# Generate root-raise cosine filter coefficients
-def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
-
-    # initialize vectors
-    h = np.zeros(n_taps, dtype=complex)
-    t_vec = np.arange(n_taps)  - (n_taps-1)//2 # -50, -49, ..., 49, 50
-    
-    for i, t in enumerate(t_vec):  
-        # Piecewise definition from https://en.wikipedia.org/wiki/Root-raised-cosine_filter
-        
-        # t = 0:
-        if t == 0:
-            h[i] = 1/Ts * (1 + beta*(4/np.pi - 1))
-            continue
-    
-        # t = Ts/(4*beta): 
-        if abs(t) == Ts/(4*beta):
-            h[i] = beta/(Ts*np.sqrt(2)) * ( (1 + 2/np.pi)*np.sin(np.pi/(4*beta)) + \
-                                           (1 - 2/np.pi)*np.cos(np.pi/(4*beta)) )
-            continue
-    
-        # otherwise
-        h[i] = 1/Ts * (np.sin(np.pi*(t/Ts)*(1-beta)) + 4*beta*(t/Ts)*np.cos(np.pi*(t/Ts)*(1+beta))) / \
-                      (np.pi*(t/Ts)*(1 - (4*beta*(t/Ts))**2))
-    return h
-
-
-def iir_lowpass(x, y_prev, alpha):
-    # 0 < alpha < 1
-    # lower alpha -> smoother output
-    return (1 - alpha) * y_prev + alpha * x
