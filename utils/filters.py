@@ -42,3 +42,7 @@ def iir_lowpass(x, y_prev, alpha):
     # 0 < alpha < 1
     # lower alpha -> smoother output
     return (1 - alpha) * y_prev + alpha * x
+
+
+def decimate(signal, factor):
+    return signal[::factor]
