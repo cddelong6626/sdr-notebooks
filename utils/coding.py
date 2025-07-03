@@ -3,7 +3,7 @@ import numpy as np
 from numba import njit
 
 @njit
-def diff_encode_qpsk_symbols(symbols):
+def diff_encode_psk_symbols(symbols):
     encoded = np.zeros(len(symbols) + 1, dtype=np.complex128)
     
     encoded[0] = np.sqrt(1j)
@@ -13,5 +13,5 @@ def diff_encode_qpsk_symbols(symbols):
     return encoded
 
 @njit
-def diff_decode_qpsk_symbols(symbols):
+def diff_decode_psk_symbols(symbols):
     return symbols[1:]/symbols[:-1] * np.sqrt(1j)

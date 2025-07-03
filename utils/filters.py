@@ -5,9 +5,7 @@ import numpy as np
 import scipy
 
 # TODO: 
-# - add rrc_filter(signal)
-# - add interpolation functions for time sync
-# - maybe add rrc specific interpolation?  
+# - maybe add rrc specific interpolation for frame detection
 
 # Generate root-raise cosine filter coefficients
 def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
