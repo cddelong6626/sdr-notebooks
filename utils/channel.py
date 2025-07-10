@@ -1,35 +1,47 @@
-
 import numpy as np
-
+from .filters import CubicFarrowStructure
 
 def apply_awgn(signal, snr_db):
 
     signal_power = np.mean(abs(signal) ** 2)
     noise_power = signal_power / (10**(snr_db / 10))
-    
+   
     awgn = np.sqrt(noise_power / 2) * (np.random.normal(0, 1, len(signal)) + 1j * np.random.normal(0, 1, len(signal)))
-    noisy_signal = signal + awgn
+    sig_noisy = signal + awgn
 
-    return noisy_signal
+    return sig_noisy
 
 
 def apply_cpo(signal, phase_offset=None):
 
-    if phase_offset is None: 
+    if phase_offset is None:
         phase_offset = 2*np.pi*np.random.rand()  # [radians]
-    
-    signal_offset = signal * np.exp(1j*phase_offset)
+   
+    sig_offset = signal * np.exp(1j*phase_offset)
 
-    return signal_offset
+    return sig_offset
 
 
-def apply_cfo(signal, pct_offset=0.03, w_offset=None): 
+def apply_cfo(signal, pct_offset=0.03, w_offset=None):
     # testing/realistic: 1-5%, aggressive: 10%
 
     if w_offset is None:
         w_offset = pct_offset*(2*np.pi)  # radians/sample
-        
+       
     n = np.arange(len(signal))
-    signal_offset = signal * np.exp(1j*w_offset*n)
+    sig_offset = signal * np.exp(1j*w_offset*n)
 
-    return signal_offset
+    return sig_offset
+
+def apply_symbol_timing_offset(signal, mu):
+    # Interpolate efficiently using a cubic farrow structure and a lagrange polynomial
+    farrow = CubicFarrowStructure()
+
+    # This interpolation returns the interpolated signal at (n - 2 + mu)
+    # Therefore:
+    #  - pad with 2 extra data at the end before processing
+    #  - exclude first 2 data from processed batch
+    signal_with_padding = np.concat(signal, [signal[-1]]*2)
+    sig_offset = farrow.process_batch(signal_with_padding, mu)[2:]
+
+    return sig_offset
