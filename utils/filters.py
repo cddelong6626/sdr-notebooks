@@ -1,14 +1,11 @@
 ### Filtering ###
 
+import numba
 from numba import jit, njit, float64
 from numba.experimental import jitclass
 import numpy as np
 import scipy
 from collections import deque
-
-# TODO:
-# - maybe add rrc specific interpolation for frame detection
-# - Add Farrow structures
 
 # Generate root-raise cosine filter coefficients
 def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
@@ -37,6 +34,10 @@ def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
        
     return h
        
+def upsample(signal, factor):
+    sig_upsampled = np.zeros(signal.size*factor, dtype=signal.dtype)
+    sig_upsampled[::factor] = signal
+    return sig_upsampled
 
 @njit
 def iir_lowpass(x, y_prev, alpha):
@@ -45,14 +46,8 @@ def iir_lowpass(x, y_prev, alpha):
     return (1 - alpha) * y_prev + alpha * x
 
 
-def decimate(signal, factor):
-    return signal[::factor]
-
-
 class CubicFarrowStructure:
-    def __init__(self):
-        self.buffer = deque([0.0] * (self.ORDER + 1), maxlen=self.ORDER + 1)
-        
+    def __init__(self):        
         self.ORDER = 3
         self.COEFFS = np.array([
             np.array([0, 0, 1, 0]),
@@ -61,8 +56,14 @@ class CubicFarrowStructure:
             np.array([1/6, -1/2, 1/2, -1/6]),
         ])
 
+        self.buffer = deque([0.0] * (self.ORDER + 1), maxlen=self.ORDER + 1)
+
     def update(self, x):
-        self.buffer.appendleft(x)
+        if isinstance(x, np.ndarray):
+            for value in x[::-1]:  # Reverse to keep newest elements at the front
+                self.buffer.appendleft(float(value))
+        else:
+            self.buffer.appendleft(float(x))
 
     def interpolate(self, mu):
         c_k = []
@@ -79,6 +80,11 @@ class CubicFarrowStructure:
     def process_batch(self, samples, mu):
         out = np.array([self.process_sample(samp, mu) for samp in samples])
         return out
+    
+    def process_batch_with_pad(self, samples, mu):
+        signal_with_padding = np.concatenate((samples, np.full(2, samples[-1], dtype=samples.dtype)))
+        return self.process_batch(signal_with_padding, mu)[2:]
+
 
 
 spec = [

@@ -6,6 +6,5 @@ from .channel import *
 from .coding import *
 from .equalization import *
 from .metrics import *
-from .optimization import *
 from .sync import *
 from .visualization import *

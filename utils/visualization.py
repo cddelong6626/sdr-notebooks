@@ -1,27 +1,27 @@
 
 ### Visualization ###
 
-# spectrum, constillation, BER vs SNR
 # todo: make plotting big signals faster, improve complex signal handling
 # todo: make master function like visualize(signal, plots=("time", "fft", "constellation")) for quick subplots
 # todo: Also could make plot_together(plot1, plot2) type shi
 
-from numba import jit
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 
 
-def plot_signal(*signals, n=None, ylabel=None, xlabel="n", title='Signal', xlim=None, ylim=None, ax=None):
+def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', xlim=None, ylim=None, ax=None):
     if len(signals) == 0:
         raise ValueError("At least one signal must be provided.")
 
     # truncate signals to just visible values
-    if xlim:
-        start, stop = xlim[0], xlim[1]+1
-        signals = [np.asarray(s[start:stop]) for s in signals]
-        n = np.arange(start, stop)
-        
+    if xlim is None:
+        if n_samps > signals[0].size: n_samps = signals[0].size
+        xlim = [0, n_samps-1]
+    start, stop = xlim[0], xlim[1]+1
+    signals = [np.asarray(s[start:stop]) for s in signals]
+    n = np.arange(start, stop)
+
     # flatten signals into vectors
     signals = [np.asarray(s).flatten() for s in signals]
 
@@ -34,8 +34,7 @@ def plot_signal(*signals, n=None, ylabel=None, xlabel="n", title='Signal', xlim=
     
     # add all signals to plot
     for i, s in enumerate(signals): 
-        if n is not None: ax.plot(n, np.asarray(s).flatten(), '.-', label=f'Signal {i+1}')
-        else: ax.plot(np.asarray(s).flatten(), '.-', label=f'Signal {i+1}')
+        ax.plot(n, np.asarray(s).flatten(), '.-', label=f'Signal {i+1}')
 
     # decorate plot
     ax.set_title(title)
@@ -51,7 +50,7 @@ def plot_signal(*signals, n=None, ylabel=None, xlabel="n", title='Signal', xlim=
     if show: fig.show()
 
 # Plot signal constellation diagram
-def plot_constellation(signal, n_samples=20, ax=None, title="Constellation Plot"):
+def plot_constellation(signal, n_samples=1000, ax=None, title="Constellation Plot"):
     """
     Display the constellation diagram of a signal
     """

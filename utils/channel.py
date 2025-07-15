@@ -41,7 +41,6 @@ def apply_symbol_timing_offset(signal, mu):
     # Therefore:
     #  - pad with 2 extra data at the end before processing
     #  - exclude first 2 data from processed batch
-    signal_with_padding = np.concat(signal, [signal[-1]]*2)
-    sig_offset = farrow.process_batch(signal_with_padding, mu)[2:]
+    sig_offset = farrow.process_batch_with_pad(signal, mu)
 
     return sig_offset
