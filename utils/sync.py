@@ -2,7 +2,7 @@ import numba
 from numba import njit
 from numba.experimental import jitclass
 import numpy as np
-from .filters import CubicFarrowStructure, PIDFeedback
+from .filters import CubicFarrowInterpolator, PIDFeedback
 
 # TODO:
 #   - Add M&M
@@ -59,60 +59,77 @@ def costas_loop(symbols, control, lock_detector=None, debug=None, theta=None):
 
     return sym_rot
 
-def gardner_ted(signal, i, mu, farrow):
-    last = farrow.interpolate(mu)
-    middle = farrow.interpolate(mu+0.5)
-    curr = farrow.process_sample(signal[i], mu)
 
-    e = middle * (last - curr)
+def gardner_ted(mu, farrow):
+    """
+    Gardner TED for SPS=2 with single-sample buffer update.
+    Assume buffer holds samples up to index i, and mu in [0,1].
+    """
+    # Check if mu is close to 0 or 1
+    # Shift base index and adjust mu accordingly to keep mu ± 1 in [0, 1)
 
+    # Interpolate using safe range
+    prev = farrow.interpolate(mu - 1)
+    curr = farrow.interpolate(mu)
+    next = farrow.interpolate(mu + 1)
+
+    # print(f"prev {prev}\t\tcurr {curr}\t\tnext {next}")
+
+    e = np.real((prev - next) * np.conj(curr))
     return e
 
 class SymbolTimingCorrector:
-    def __init__(self, ted_func=gardner_ted, control=PIDFeedback(K_p=0.1), signal=np.empty(1)):
-        # Create farrow structure for interpolation
-        self._farrow = CubicFarrowStructure()
-
-        # Store args as attributes
-        self.load_signal(signal)
+    def __init__(self, ted_func=gardner_ted, control=None, signal=None):
+        self._farrow = CubicFarrowInterpolator()
         self.ted_func = ted_func
-        self.control = control
-        
-        # Current index within _signal and current fractional delay
-        self.idx = 0
-        self.mu = 0.0
-   
+        self.control = control if control else PIDFeedback(K_p=0.05)
+        self.signal = None
+        self.i = 0
+        self.mu = 0.5
+
+        self.mu_log = []
+        self.e_log = []
+
+        if signal is not None:
+            self.load_signal(signal)
+
     def load_signal(self, signal):
-        self.SIG_SIZE = signal.size
-        self._signal = np.concat((signal, [signal[-1]]*2))
-        self._farrow.update(self._signal[:2])
+        self.signal = np.asarray(signal, dtype=np.complex128)
+        self.SIG_SIZE = len(self.signal)
+        self._farrow.load(signal[:2])
+        self.i = 0
 
     def correct_sample(self):
-        if self.idx >= self.SIG_SIZE:
-            raise Exception("SymbolTimingCorrector: correct_sample: Index out of range")
+        # Add next sample to Farrow buffer first
+        self._farrow.load(self.signal[self.i])
 
-        # find error from current offset and correct
-        e = self.ted_func(self._signal, self.idx, self.mu, self._farrow)
+        # Compute TED error at current mu using Farrow buffer
+        e = self.ted_func(self.mu, self._farrow)
 
-        # update fractional delay in PID feedback loop, keeping it between 0 and 1
-        self.mu = self.control.update(e)
-        print(e)
-        # if self.mu < 0: self.mu += 1
-        # if self.mu > 1: self.mu -= 1
+        # Update fractional delay using PID or loop filter
+        self.mu += self.control.update(e)
+        # self.mu %= 1.0
+        # self.mu = 0.
 
-        # farrow stucture loading assumes 3 samples previously loaded in
-        samp_resamp = self._farrow.interpolate(self.mu)
+        self.mu_log.append(self.mu)
+        self.e_log.append(e)
 
-        self.idx += 1
-        return samp_resamp
+        # Interpolate at current timing phase
+        sample_out = self._farrow.interpolate(self.mu, integer_offset=0)
+
+        self.i += 1
+        return sample_out
 
     def correct_batch(self, batch=None, n=None):
         if batch is not None:
             self.load_signal(batch)
-        elif self._signal is None:
-            raise Exception("No batch provided")
+        elif self.signal is None:
+            raise ValueError("No input signal provided.")
+
         if n is None:
             n = self.SIG_SIZE
 
-        self._signal = np.concat((self._signal, [self._signal[-1]]*2))
-        return np.array([self.correct_sample() for _ in range(n)])[2:]
+        out = []
+        for _ in range(n):
+            out.append(self.correct_sample())
+        return np.array(out, dtype=np.complex128)

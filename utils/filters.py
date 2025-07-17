@@ -46,44 +46,89 @@ def iir_lowpass(x, y_prev, alpha):
     return (1 - alpha) * y_prev + alpha * x
 
 
-class CubicFarrowStructure:
-    def __init__(self):        
-        self.ORDER = 3
-        self.COEFFS = np.array([
-            np.array([0, 0, 1, 0]),
-            np.array([-1/6, 1, -1/2, -1/3]),
-            np.array([0, 1/2, -1, 1/2]),
-            np.array([1/6, -1/2, 1/2, -1/6]),
-        ])
-
-        self.buffer = deque([0.0] * (self.ORDER + 1), maxlen=self.ORDER + 1)
-
-    def update(self, x):
-        if isinstance(x, np.ndarray):
-            for value in x[::-1]:  # Reverse to keep newest elements at the front
-                self.buffer.appendleft(float(value))
-        else:
-            self.buffer.appendleft(float(x))
-
-    def interpolate(self, mu):
-        c_k = []
-        sample_segment = np.array(list(self.buffer))[:len(self.COEFFS[0])]
-        for k in range(self.ORDER + 1):
-            c_k.append(np.dot(self.COEFFS[k], sample_segment))
-        output = sum(c * mu**k for k, c in enumerate(c_k))
-        return output
-
-    def process_sample(self, sample, mu):
-        self.update(sample)
-        return self.interpolate(mu)
-   
-    def process_batch(self, samples, mu):
-        out = np.array([self.process_sample(samp, mu) for samp in samples])
-        return out
+# Simple linear interpolator class, similar buffer style to Farrow
+class LinearInterpolator:
+    def __init__(self):
+        self.buffer = deque([0j, 0j], maxlen=2)  # Need 2 samples for linear interp
     
-    def process_batch_with_pad(self, samples, mu):
-        signal_with_padding = np.concatenate((samples, np.full(2, samples[-1], dtype=samples.dtype)))
-        return self.process_batch(signal_with_padding, mu)[2:]
+    def update(self, sample):
+        self.buffer.append(sample)
+    
+    def interpolate(self, mu):
+        """
+        Linear interp between buffer[-2] and buffer[-1]:
+        y(mu) = (1-mu)*x[n-1] + mu*x[n]
+        mu in [0,1)
+        """
+        x0, x1 = self.buffer[0], self.buffer[1]
+        return (1 - mu)*x0 + mu*x1
+
+class CubicFarrowInterpolator:
+    """
+    Cubic Lagrange interpolator using Farrow structure.
+    Supports real and complex input (e.g., np.complex128).
+    """
+    def __init__(self):
+        self.ORDER = 3
+        self.NUM_TAPS = self.ORDER + 1
+
+        # Flipped coefficients for Lagrange basis (to match [oldest -> newest] buffer)
+        raw_coeffs = np.array([
+            [0, 0, 1, 0],
+            [-1/6, 1, -1/2, -1/3],
+            [0, 1/2, -1, 1/2],
+            [1/6, -1/2, 1/2, -1/6],
+        ], dtype=np.float64)
+
+        # Flip to align with buffer: buffer[0] = oldest, buffer[-1] = newest
+        self.COEFFS = np.fliplr(raw_coeffs).astype(np.complex128)
+
+        # Complex-valued buffer: oldest first, newest last
+        self.buffer = deque([0.0j] * self.NUM_TAPS, maxlen=self.NUM_TAPS)
+
+    def reset(self):
+        """Clear the buffer back to zeros."""
+        self.buffer = deque([0.0j] * self.NUM_TAPS, maxlen=self.NUM_TAPS)
+
+    def load(self, x):
+        """Append a single sample or iterable of samples (complex or real)."""
+        if isinstance(x, (np.ndarray, list, tuple)):
+            for sample in x:
+                self.buffer.append(np.complex128(sample))
+        else:
+            self.buffer.append(np.complex128(x))
+
+    def interpolate(self, mu, integer_offset=0):
+        """
+        Interpolate sample at (integer_offset + mu) samples before newest sample.
+        integer_offset: 0 means interpolate between newest and second newest samples
+        mu: fractional delay between 0 and 1
+        """
+        # assert -1 <= integer_offset+mu < 3
+
+        # Build sample segment starting at position integer_offset
+        mu -= integer_offset
+        segment = np.array(list(self.buffer))
+        
+        # Use FIR filters to calculate the polynomial coefficients
+        c_k = self.COEFFS @ segment
+        powers = mu ** np.arange(self.ORDER + 1)
+        return np.dot(c_k, powers)
+    
+    def process_sample(self, sample, mu, integer_offset):
+        """Add a new sample and immediately interpolate at fractional delay mu."""
+        self.load(sample)
+        return self.interpolate(mu, integer_offset)
+
+    def process_batch(self, samples, mu, integer_offset):
+        """Interpolate a batch of complex samples using a fixed mu."""
+        return np.array([self.process_sample(s, mu, integer_offset) for s in samples], dtype=np.complex128)
+
+    def process_batch_with_tail_padding(self, samples, mu, integer_offset=0):
+        """Add 2-sample tail padding and interpolate the batch at fixed mu."""
+        last_val = samples[-1] if len(samples) > 0 else 0.0j
+        padded = np.concatenate([samples, np.full(2, last_val, dtype=samples.dtype)])
+        return self.process_batch(padded, mu, integer_offset)[2:]
 
 
 

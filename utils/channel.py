@@ -1,5 +1,5 @@
 import numpy as np
-from .filters import CubicFarrowStructure
+from .filters import CubicFarrowInterpolator
 
 def apply_awgn(signal, snr_db):
 
@@ -33,14 +33,12 @@ def apply_cfo(signal, pct_offset=0.03, w_offset=None):
 
     return sig_offset
 
-def apply_symbol_timing_offset(signal, mu):
-    # Interpolate efficiently using a cubic farrow structure and a lagrange polynomial
-    farrow = CubicFarrowStructure()
+def apply_sto(signal, mu, integer_offset=0):
+    """Apply symbol timing offset to signal"""
 
-    # This interpolation returns the interpolated signal at (n - 2 + mu)
-    # Therefore:
-    #  - pad with 2 extra data at the end before processing
-    #  - exclude first 2 data from processed batch
-    sig_offset = farrow.process_batch_with_pad(signal, mu)
+    # Interpolate efficiently using a cubic farrow structure and a lagrange polynomial
+    farrow = CubicFarrowInterpolator()
+    sig_offset = farrow.process_batch_with_tail_padding(signal, mu, integer_offset)
 
     return sig_offset
+

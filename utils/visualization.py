@@ -10,33 +10,46 @@ import matplotlib.pyplot as plt
 import scipy
 
 
-def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', xlim=None, ylim=None, ax=None):
+def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal',
+                xlim=None, ylim=None, ax=None, x=None):
     if len(signals) == 0:
         raise ValueError("At least one signal must be provided.")
 
-    # truncate signals to just visible values
-    if xlim is None:
-        if n_samps > signals[0].size: n_samps = signals[0].size
-        xlim = [0, n_samps-1]
-    start, stop = xlim[0], xlim[1]+1
-    signals = [np.asarray(s[start:stop]) for s in signals]
-    n = np.arange(start, stop)
+    # Determine the default x-axis (independent variable)
+    if x is not None:
+        x = np.asarray(x)
+        if xlim is None:
+            xlim = [x[0], x[min(n_samps, len(x)) - 1]]
+        # Apply xlim to find corresponding indices
+        start_idx = np.searchsorted(x, xlim[0], side='left')
+        stop_idx = np.searchsorted(x, xlim[1], side='right')
+        x = x[start_idx:stop_idx]
+        signals = [np.asarray(s)[start_idx:stop_idx] for s in signals]
+    else:
+        # Use default index-based x
+        if xlim is None:
+            if n_samps > len(signals[0]):
+                n_samps = len(signals[0])
+            xlim = [0, n_samps - 1]
+        start, stop = xlim[0], xlim[1] + 1
+        x = np.arange(start, stop)
+        signals = [np.asarray(s)[start:stop] for s in signals]
 
-    # flatten signals into vectors
+    # Flatten signals into vectors
     signals = [np.asarray(s).flatten() for s in signals]
 
-    # axes object can be passed in, which allows figures to be plotted in subplots
+    # Axes object can be passed in, which allows figures to be plotted in subplots
     if ax is None:
         fig, ax = plt.subplots()
         show = True
     else:
         show = False
-    
-    # add all signals to plot
-    for i, s in enumerate(signals): 
-        ax.plot(n, np.asarray(s).flatten(), '.-', label=f'Signal {i+1}')
 
-    # decorate plot
+    # Add all signals to plot
+    for i, s in enumerate(signals):
+        ax.plot(x, s, '.-', label=f'Signal {i+1}')
+
+    # Decorate plot
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -47,8 +60,8 @@ def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', 
     ax.grid(True)
     if len(signals) > 1:
         ax.legend([f"Signal {i+1}" for i in range(len(signals))])
-    if show: fig.show()
-
+    if show:
+        fig.show()
 # Plot signal constellation diagram
 def plot_constellation(signal, n_samples=1000, ax=None, title="Constellation Plot"):
     """
