@@ -1,5 +1,5 @@
 import numpy as np
-from .filters import CubicFarrowInterpolator
+from .interpolators import CubicFarrowInterpolator
 
 def apply_awgn(signal, snr_db):
 
