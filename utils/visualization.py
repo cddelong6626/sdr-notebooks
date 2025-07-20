@@ -10,10 +10,15 @@ import matplotlib.pyplot as plt
 import scipy
 
 
-def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal',
+def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', label=[],
                 xlim=None, ylim=None, ax=None, x=None):
     if len(signals) == 0:
         raise ValueError("At least one signal must be provided.")
+    
+    # User must input one ylabel for every inputted signal
+    label = np.asarray(label)
+    if len(label) != len(signals) and len(label) != 0:
+        raise ValueError("Must have equal number of signals and ylabels.")
 
     # Determine the default x-axis (independent variable)
     if x is not None:
@@ -46,8 +51,10 @@ def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal',
         show = False
 
     # Add all signals to plot
+    if len(label) == 0:
+        label = [f'Signal {i+1}' for i in range(len(signals))]
     for i, s in enumerate(signals):
-        ax.plot(x, s, '.-', label=f'Signal {i+1}')
+        ax.plot(x, s, '.-', label=label[i])
 
     # Decorate plot
     ax.set_title(title)
@@ -59,9 +66,12 @@ def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal',
         ax.set_ylim(ylim)
     ax.grid(True)
     if len(signals) > 1:
-        ax.legend([f"Signal {i+1}" for i in range(len(signals))])
+        ax.legend()
     if show:
         fig.show()
+
+    # if fig is not None: return fig
+
 # Plot signal constellation diagram
 def plot_constellation(signal, n_samples=1000, ax=None, title="Constellation Plot"):
     """

@@ -29,3 +29,7 @@ class PIDFeedback:
         self.prev_e = e
 
         return x
+    
+    def reset(self):
+        self.sum_e = 0.0
+        self.prev_e = 0.0
