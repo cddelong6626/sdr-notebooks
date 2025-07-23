@@ -11,20 +11,20 @@ from .control import PIDFeedback
 
 class SymbolTimingCorrector(ABC):
     @staticmethod
-    def ted(self, mu, e):
-        pass
+    def ted(mu, farrow):
+        raise NotImplementedError
 
     @abstractmethod
     def load_signal(self, signal):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def correct_symbol(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def correct_batch(self):
-        pass
+        raise NotImplementedError
 
 
 class GardnerSymbolTimingCorrector(SymbolTimingCorrector):

@@ -7,7 +7,7 @@ import numpy as np
 import scipy
 
 # Generate root-raise cosine filter coefficients
-def rrc_coef(n_taps=101, beta=0.35, Ts=1.0):
+def rrc(n_taps=101, beta=0.35, Ts=1.0):
 
     # initialize vectors
     h = np.empty(n_taps, dtype=complex)

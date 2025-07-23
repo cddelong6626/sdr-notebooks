@@ -5,6 +5,7 @@ from .coding import *
 from .control import *
 from .dsp import *
 from .equalization import *
+from .framing import *
 from .interpolators import *
 from .metrics import *
 from .modulation import *

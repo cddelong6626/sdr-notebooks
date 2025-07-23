@@ -2,6 +2,7 @@ import numpy as np
 from .interpolators import CubicFarrowInterpolator
 
 def apply_awgn(signal, snr_db):
+    """Apply AWGN (additive Gaussian white noise) to signal"""
 
     signal_power = np.mean(abs(signal) ** 2)
     noise_power = signal_power / (10**(snr_db / 10))
@@ -13,6 +14,7 @@ def apply_awgn(signal, snr_db):
 
 
 def apply_cpo(signal, phase_offset=None):
+    """Apply carrier phase offset to signal"""
 
     if phase_offset is None:
         phase_offset = 2*np.pi*np.random.rand()  # [radians]
@@ -23,6 +25,7 @@ def apply_cpo(signal, phase_offset=None):
 
 
 def apply_cfo(signal, pct_offset=0.03, w_offset=None):
+    """Apply carrier frequency offset to signal"""
     # testing/realistic: 1-5%, aggressive: 10%
 
     if w_offset is None:
@@ -42,3 +45,10 @@ def apply_sto(signal, mu, integer_offset=0):
 
     return sig_offset
 
+def apply_frame_timing_offset(frames: np.ndarray, max_delay):
+    """Add random distances between frames to simulate bursty transmission"""
+    sig_out = np.empty(0, frames[0][0].dtype)
+    for frame in frames:
+        offset = np.zeros(np.random.randint(1, max_delay))
+        sig_out = np.concatenate([sig_out, offset, frame])
+    return sig_out

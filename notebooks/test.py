@@ -26,7 +26,7 @@ N_RRC_TAPS = SPS*10 + 1
 N_SAMPS = 70
 
 # TX
-h_rrc = rrc_coef(Ts=SPS, n_taps=N_RRC_TAPS)
+h_rrc = rrc(Ts=SPS, n_taps=N_RRC_TAPS)
 s = np.convolve(upsample(modulate_qpsk(np.random.randint(2, size=N_SAMPS)), SPS), h_rrc)
 samples = np.array([s[i]*(i % SPS == 0) for i in np.arange(s.size)], dtype=s.dtype)
 
