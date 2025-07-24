@@ -57,7 +57,3 @@ sdr-notebooks/
 ## Screenshots
 
 TODO
-
-## License
-
-MIT License

@@ -1,5 +1,6 @@
 
 import numpy as np
+from scipy import signal
 
 
 def zadoff_chu(N_zc: int, q: int=1):
@@ -36,4 +37,68 @@ def to_frames(preamble: np.ndarray, payload: np.ndarray, n: int):
 
 
 class FramingStateMachine:
-    pass
+    def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8):
+        self.preamble = preamble
+        self.preamble_norm = np.sum(np.abs(self.preamble) ** 2)
+        self.matched_filter = self.preamble[::-1].conj()
+
+        self.expected_frame_length = expected_frame_length
+        self.detection_threshold = detection_threshold
+
+        self.state = "SEARCH"
+        self.buffer = []
+        
+        self.test = None
+    
+    def update(self, new_samples: np.ndarray):
+        self.buffer.extend(new_samples)
+        frames = []
+
+        while True:
+
+            # Pause state machine when buffer can't hold a frame
+            if len(self.buffer) < self.expected_frame_length:
+                break
+
+            # SEARCH state: Search for preamble within buffer
+            if self.state == "SEARCH":
+                idx = self.detect_preamble()
+                if idx is not None:
+                    self.buffer = self.buffer[idx:]
+                    self.state = "ACQUIRE"
+                    continue
+                else:   # If no preamble is detected: pause search
+                    self.buffer = self.buffer[-len(self.preamble):]
+                    break
+
+            # ACQUIRE state: Add found frame to frames array
+            if self.state == "ACQUIRE":
+                frame = self.buffer[:self.expected_frame_length]
+                frames.append(frame)
+                self.buffer = self.buffer[self.expected_frame_length:]
+                self.state = "SEARCH"
+                continue
+
+        return frames
+    
+    def detect_preamble(self):
+        """Apply matched filter to signal and report the index of the first spike"""
+        matched = signal.convolve(self.matched_filter, self.buffer, mode='valid')
+
+        # Compute L2 norm of sliding window for normalization
+        window_norm = signal.convolve(np.ones_like(self.matched_filter), np.abs(self.buffer)**2, mode='valid')
+        normalization = (self.preamble_norm * window_norm).astype(np.float32)
+
+        # Avoid division by zero
+        normalization[normalization == 0] = 1e-12
+
+        # Metric = Energy of matched / (product of energies of filter and window)
+        # This makes detection more robust to noise and varying SNRs
+        metric = (np.abs(matched) ** 2) / normalization
+
+        peaks = np.where(metric > self.detection_threshold)
+
+        if self.test is None:
+            self.test = metric
+
+        return peaks[0][0] if len(peaks[0]) > 0 else None
