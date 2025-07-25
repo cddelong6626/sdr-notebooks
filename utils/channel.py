@@ -45,10 +45,11 @@ def apply_sto(signal, mu, integer_offset=0):
 
     return sig_offset
 
-def apply_frame_timing_offset(frames: np.ndarray, max_delay):
-    """Add random distances between frames to simulate bursty transmission"""
+def apply_fto(frames: np.ndarray, max_delay):
+    """Apply frame timing offset to frames to simulate bursty transmission"""
     sig_out = np.empty(0, frames[0][0].dtype)
     for frame in frames:
         offset = np.zeros(np.random.randint(1, max_delay))
         sig_out = np.concatenate([sig_out, offset, frame])
+    
     return sig_out

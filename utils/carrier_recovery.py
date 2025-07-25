@@ -5,6 +5,7 @@ from numba.experimental import jitclass
 import numpy as np
 from .interpolators import CubicFarrowInterpolator
 from .control import PIDFeedback
+from .framing import FramingStateMachine
 
 
 spec = [
@@ -55,4 +56,45 @@ def costas_loop(symbols, control, lock_detector=None, debug=None, theta=None):
         #     theta += control.update(e)
 
     return sym_rot
+
+class CoarseCFOCorrector:
+    def __init__(self, preamble, detection_threshold=0.5):
+        self.preamble = preamble
+        self.detection_threshold = detection_threshold
+        
+        self.w_est = None
+        self.fsm = FramingStateMachine(preamble, len(self.preamble), self.detection_threshold)
+
+    def guess(self, new_samples):
+        """Guess frequency offset based on the first preamble detected in an array of samples"""
+
+        # Detect preamble
+        preambles = self.fsm.update(new_samples)
+
+        # No preambles detected: no guess made
+        if len(preambles) == 0:
+            return False
+        
+        # Preamble detected: estimate CFO based on first preamble
+        self.estimate_cfo(preambles[0])
+        return True
+        
+    def estimate_cfo(self, preamble_in):
+        """Estimate CFO (rads/sample) based on phase drift of preamble over time"""
+        phase_off = np.angle(preamble_in / self.preamble)
+        rel_phase_off = phase_off[1:] - phase_off[:-1]
+        self.w_est = np.mean(rel_phase_off)
+        
+        self.test = (phase_off, preamble_in, self.preamble)
+
+    def correct(self, signal):
+        """Correct the CFO of a signal assuming CFO has been estimated using estimate_w()"""
+        if self.w_est is None:
+            raise AttributeError("CFO must be estimated before it can be corrected")
+
+        n = np.arange(len(signal))
+        sig_offset = signal * np.exp(1j*self.w_est*n)
+
+        return sig_offset
+
 

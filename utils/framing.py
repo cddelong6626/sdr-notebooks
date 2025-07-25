@@ -41,7 +41,7 @@ class FramingStateMachine:
         self.preamble = preamble
         self.preamble_norm = np.sum(np.abs(self.preamble) ** 2)
         self.matched_filter = self.preamble[::-1].conj()
-
+ 
         self.expected_frame_length = expected_frame_length
         self.detection_threshold = detection_threshold
 
@@ -49,7 +49,7 @@ class FramingStateMachine:
         self.buffer = []
         
         self.test = None
-    
+            
     def update(self, new_samples: np.ndarray):
         self.buffer.extend(new_samples)
         frames = []
