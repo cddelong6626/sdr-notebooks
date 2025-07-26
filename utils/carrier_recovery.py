@@ -3,9 +3,7 @@ import numba
 from numba import njit
 from numba.experimental import jitclass
 import numpy as np
-from .interpolators import CubicFarrowInterpolator
-from .control import PIDFeedback
-from .framing import FramingStateMachine
+from .framing import CorrelationFrameDetector
 
 
 spec = [
@@ -57,19 +55,57 @@ def costas_loop(symbols, control, lock_detector=None, debug=None, theta=None):
 
     return sym_rot
 
-class CoarseCFOCorrector:
-    def __init__(self, preamble, detection_threshold=0.5):
+
+class SCCoarseCFOCorrector:
+    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.8):
+        self._preamble = None
+        self._detection_threshold = None
+        self._T = None
+        self._w_est = None
+        self._fd = CorrelationFrameDetector(
+            preamble=preamble, 
+            expected_frame_length=len(preamble), 
+            detection_threshold=detection_threshold
+        )
+
         self.preamble = preamble
         self.detection_threshold = detection_threshold
-        
-        self.w_est = None
-        self.fsm = FramingStateMachine(preamble, len(self.preamble), self.detection_threshold)
+
+        self.debug = None
+
+
+    @property
+    def preamble(self):
+        return self._preamble
+    
+    @preamble.setter
+    def preamble(self, value: np.ndarray):
+        assert len(value) % 2 == 0, "Schmidl-Cox preamble must be even in length"
+        assert np.all(value[:int(len(value)/2)] == value[int(len(value)/2):]), "Schmidl-Cox preamble must be two identical halves"
+
+        self._preamble = value
+        self._T = len(value)/2
+        self._fd.preamble = value
+        self._fd.expected_frame_length = len(value)
+
+
+    @property
+    def detection_threshold(self):
+        return self._detection_threshold
+    
+    @detection_threshold.setter
+    def detection_threshold(self, value: float):
+        assert 0 <= value and value <= 1, "Detection threshold must be bounded between 0 and 1"
+
+        self._detection_threshold = value
+        self._fd.detection_threshold = value
+
 
     def guess(self, new_samples):
         """Guess frequency offset based on the first preamble detected in an array of samples"""
 
         # Detect preamble
-        preambles = self.fsm.update(new_samples)
+        preambles = self._fd.update(new_samples)
 
         # No preambles detected: no guess made
         if len(preambles) == 0:
@@ -79,13 +115,35 @@ class CoarseCFOCorrector:
         self.estimate_cfo(preambles[0])
         return True
         
-    def estimate_cfo(self, preamble_in):
-        """Estimate CFO (rads/sample) based on phase drift of preamble over time"""
-        phase_off = np.angle(preamble_in / self.preamble)
-        rel_phase_off = phase_off[1:] - phase_off[:-1]
-        self.w_est = np.mean(rel_phase_off)
+    def estimate_cfo(self, preamble: np.ndarray):
+        """
+        Coarsely estimate CFO (rads/sample) using Schmidl-Cox algorithm
         
-        self.test = (phase_off, preamble_in, self.preamble)
+        See:
+            T. M. Schmidl and D. C. Cox, “Robust frequency and timing synchronization for OFDM,” IEEE Transactions 
+            on Communications, vol. 45, no. 12, pp. 1613-1621, 1997, doi: 10.1109/26.650240.
+            https://doi.org/10.1109/26.650240
+        """
+        assert preamble.dtype == np.complex128
+
+        # Calculate CFO estimate for each pair
+        P = preamble[:self._T] * preamble[self._T:].conj()
+        phi_hat = np.angle(P)
+        w_hat_i = phi_hat/(np.pi*self._T)
+
+        # Use Median Absolute Devaition (MAD) to filter out outliers
+        k = 2.5
+        med = np.median(w_hat_i)
+        abs_dev_i = np.abs(w_hat_i - med)
+        mad = np.median(abs_dev_i)
+
+        # Estimate CFO as mean of inliers
+        inliers = w_hat_i[abs_dev_i < k*mad]
+        self._w_est = np.mean(inliers)
+        
+    def get_estimate(self):
+        """Return estimate of CFO in [radians/sample]"""
+        return self._w_est
 
     def correct(self, signal):
         """Correct the CFO of a signal assuming CFO has been estimated using estimate_w()"""

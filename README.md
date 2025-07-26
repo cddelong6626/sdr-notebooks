@@ -4,7 +4,6 @@
 
 > **Work In Progress**  
 > This project is under active development. Core features are incomplete, and the implementation and interface are subject to change.  
-> Contributions and issue reports are welcome, but please note that stability is not guaranteed.
 
 This repo contains a collection of Jupyter notebooks for exploring signal processing topics in digital communications and software-defined radio (SDR). It supports algorithm development and design decisions for larger projects like `qpsk-pluto2rtl-pipeline` and `ofdm-pluto2rtl-pipeline`.
 
