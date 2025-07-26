@@ -6,8 +6,13 @@ from numba.experimental import jitclass
 import numpy as np
 import scipy
 
+def upsample(signal, factor):
+    sig_upsampled = np.zeros(signal.size*factor, dtype=signal.dtype)
+    sig_upsampled[::factor] = signal
+    return sig_upsampled
+
 # Generate root-raise cosine filter coefficients
-def rrc(n_taps=101, beta=0.35, Ts=1.0):
+def rrc(n_taps=21, beta=0.35, Ts=2):
 
     # initialize vectors
     h = np.empty(n_taps, dtype=complex)
@@ -33,10 +38,9 @@ def rrc(n_taps=101, beta=0.35, Ts=1.0):
        
     return h
        
-def upsample(signal, factor):
-    sig_upsampled = np.zeros(signal.size*factor, dtype=signal.dtype)
-    sig_upsampled[::factor] = signal
-    return sig_upsampled
+def rrc_filter(signal, n_taps=21, beta=0.35, Ts=2):
+    taps = rrc(n_taps, beta, Ts)
+    return np.convolve(signal, taps)
 
 @njit
 def iir_lowpass(x, y_prev, alpha):
