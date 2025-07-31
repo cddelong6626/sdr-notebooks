@@ -10,10 +10,11 @@ import matplotlib.pyplot as plt
 import scipy
 
 
-def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', label=[],
+def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title='Signal', label=[],
                 xlim=None, ylim=None, ax=None, x=None):
     if len(signals) == 0:
         raise ValueError("At least one signal must be provided.")
+
     
     # User must input one ylabel for every inputted signal
     label = np.asarray(label)
@@ -33,7 +34,7 @@ def plot_signal(*signals, n_samps=100, ylabel=None, xlabel="n", title='Signal', 
     else:
         # Use default index-based x
         if xlim is None:
-            if n_samps > len(signals[0]):
+            if n_samps is None or n_samps > len(signals[0]):
                 n_samps = len(signals[0])
             xlim = [0, n_samps - 1]
         start, stop = xlim[0], xlim[1] + 1

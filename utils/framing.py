@@ -3,6 +3,7 @@ import numpy as np
 from scipy import signal
 
 
+
 ### PREAMBLES ###
 
 def zadoff_chu(N: int, q: int=1):
@@ -10,10 +11,8 @@ def zadoff_chu(N: int, q: int=1):
     Generate a Zadoff-Chu sequence with sequence length N_zc and root index q
 
     See:
-        M. Hua, M. Wang, K. W. Yang, and K. J. Zou, “Analysis of the Frequency Offset Effect on Zadoff-Chu 
-        Sequence Timing Performance,” IEEE Transactions on Communications, vol. 62, no. 11, pp. 4024-4039, 
-        Nov. 2014, doi: 10.1109/tcomm.2014.2364597.
-        https://ieeexplore.ieee.org/document/6935096
+        Andrews, J.G. (2022). A Primer on Zadoff Chu Sequences. arXiv preprint arXiv:2211.05702.
+        https://arxiv.org/abs/2211.05702
     """
 
     if N % 2 == 0:
@@ -26,8 +25,8 @@ def zadoff_chu(N: int, q: int=1):
     return np.exp(-j*np.pi*q*n*(n+1)/N)
 
 
-def pseudo_random(N: int):
-    """Generate a pseudo-random sequence of length N"""
+def pn(N: int):
+    """Generate a Pseudo-random Number (PN) sequence of length N"""
     return np.random.randint(2, size=N)
 
 
@@ -47,6 +46,7 @@ def to_frames(preamble: np.ndarray, payload: np.ndarray, n: int):
     return frames
 
 
+
 ### FRAME DETECTION ###
 
 class FrameDetector:
@@ -61,13 +61,13 @@ class FrameDetector:
         self.detection_threshold = detection_threshold
 
         self.state = "SEARCH"
-        self.buffer = []
+        self.buffer = np.empty(0, dtype=np.complex128)
 
         self.debug = None
         
-    def update(self, new_samples: np.ndarray):
+    def process(self, new_samples: np.ndarray):
         """Update the buffer and check if there are any frames detected"""
-        self.buffer.extend(new_samples)
+        self.buffer = np.concatenate((self.buffer, new_samples))
         frames = []
 
         while True:
@@ -88,7 +88,7 @@ class FrameDetector:
 
             # ACQUIRE state: Add found frame to frames array
             if self.state == "ACQUIRE":
-                frame = self.buffer[:self.expected_frame_length]
+                frame = np.array(self.buffer[:self.expected_frame_length])
                 frames.append(frame)
                 self.buffer = self.buffer[self.expected_frame_length:]
                 self.state = "SEARCH"
@@ -124,8 +124,51 @@ class CorrelationFrameDetector(FrameDetector):
         """Apply matched filter to signal and report the index of the first spike"""
         matched = signal.convolve(self._matched_filter, self.buffer, mode='valid')
 
-        # Compute L2 norm of sliding window for normalization
+        # Compute energy of sliding window for normalization
         window_norm = signal.convolve(np.ones_like(self._matched_filter), np.abs(self.buffer)**2, mode='valid')
+        normalization = (self._preamble_norm * window_norm).astype(np.float32)
+
+        # Avoid division by zero
+        normalization[normalization == 0] = 1e-12
+
+        # Metric = Energy of matched / (product of energies of filter and window)
+        # This makes detection more robust to noise and varying SNRs
+        metric = (np.abs(matched) ** 2) / normalization
+        peaks = np.where(metric > self.detection_threshold)
+
+        if self.debug is None: # TODO: REMOVE
+            self.debug = metric
+
+        return peaks[0][0] if len(peaks[0]) > 0 else None
+    
+class DifferentialCorrelationFrameDetector(FrameDetector):
+    """Detect frames using differential correlation with the complex conjugate of the preamble"""
+    def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8):
+        self._preamble = None
+        self._preamble_norm = None
+        self._matched_filter = None
+
+        dpreamble = preamble[1:] - preamble[:-1]
+        super().__init__(dpreamble, expected_frame_length, detection_threshold)
+
+    @property
+    def preamble(self):
+        return self._preamble
+
+    @preamble.setter
+    def preamble(self, value: np.ndarray):
+        """Set preamble and related values"""
+        self._preamble = value[1:] - value[:-1]
+        self._preamble_norm = np.sum(np.abs(value) ** 2)
+        self._matched_filter = value[::-1].conj()
+    
+    def detect_preamble(self):
+        """Apply matched filter to signal and report the index of the first spike"""
+        dbuffer = self.buffer[1:] - self.buffer[:-1]
+        matched = signal.convolve(self._matched_filter, dbuffer, mode='valid')
+
+        # Compute energy of sliding window for normalization
+        window_norm = signal.convolve(np.ones_like(self._matched_filter), np.abs(dbuffer)**2, mode='valid')
         normalization = (self._preamble_norm * window_norm).astype(np.float32)
 
         # Avoid division by zero
@@ -144,7 +187,7 @@ class CorrelationFrameDetector(FrameDetector):
 
 class SCFrameDetector(FrameDetector):
     """
-    Detect frames using the Schmidl and Cox algorithm
+    Detect frames using the Schmidl and Cox algorithm. TODO
     
     See:
         T. M. Schmidl and D. C. Cox, “Robust frequency and timing synchronization for OFDM,” IEEE Transactions 
