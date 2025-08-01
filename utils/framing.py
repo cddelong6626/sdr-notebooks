@@ -159,8 +159,8 @@ class DifferentialCorrelationFrameDetector(FrameDetector):
     def preamble(self, value: np.ndarray):
         """Set preamble and related values"""
         self._preamble = value[1:] - value[:-1]
-        self._preamble_norm = np.sum(np.abs(value) ** 2)
-        self._matched_filter = value[::-1].conj()
+        self._preamble_norm = np.sum(np.abs(self._preamble) ** 2)
+        self._matched_filter = self._preamble[::-1].conj()
     
     def detect_preamble(self):
         """Apply matched filter to signal and report the index of the first spike"""
@@ -180,7 +180,7 @@ class DifferentialCorrelationFrameDetector(FrameDetector):
         peaks = np.where(metric > self.detection_threshold)
 
         if self.debug is None: # TODO: REMOVE
-            self.debug = metric
+            self.debug = (metric, self._preamble, dbuffer[peaks[0][0]:peaks[0][0]+len(self._preamble)])
 
         return peaks[0][0] if len(peaks[0]) > 0 else None
     

@@ -3,7 +3,7 @@ import numba
 from numba import njit
 from numba.experimental import jitclass
 import numpy as np
-from .framing import CorrelationFrameDetector
+from .framing import DifferentialCorrelationFrameDetector
 from abc import ABC
 
 
@@ -58,7 +58,7 @@ def costas_loop(symbols, control, lock_detector=None, debug=None, theta=None):
 
 
 class CoarseCFOCorrector(ABC):
-    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.8, detector_cls=CorrelationFrameDetector):
+    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.6, detector_cls=DifferentialCorrelationFrameDetector):
         self._preamble = None
         self._detection_threshold = None
         self._w_est = None
@@ -99,6 +99,7 @@ class CoarseCFOCorrector(ABC):
         """Estimate frequency offset based on the first preamble detected in an array of samples"""
         # Detect preamble
         preambles = self._fd.process(new_samples)
+        self.debug = preambles
 
         # No preambles detected: no guess made
         if len(preambles) == 0:
@@ -128,7 +129,7 @@ class CoarseCFOCorrector(ABC):
 
 class SCCoarseCFOCorrector(CoarseCFOCorrector): 
     """Coarsely estimate CFO using Schmidl-Cox algorithm"""
-    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.8, detector_cls=CorrelationFrameDetector):
+    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.6, detector_cls=DifferentialCorrelationFrameDetector):
         super().__init__(preamble, detection_threshold, detector_cls)
 
     @property
@@ -178,7 +179,7 @@ class SCCoarseCFOCorrector(CoarseCFOCorrector):
 
 class PhaseDriftCFOCorrector(CoarseCFOCorrector):
     """Coarsely estimate CFO based on phase drift of preamble over time"""
-    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.8, detector_cls=CorrelationFrameDetector):
+    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.6, detector_cls=DifferentialCorrelationFrameDetector):
         super().__init__(preamble, detection_threshold, detector_cls)
 
     def estimate_cfo(self, rx_preamble: np.ndarray):

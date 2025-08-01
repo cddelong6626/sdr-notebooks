@@ -14,7 +14,6 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title='Signal',
                 xlim=None, ylim=None, ax=None, x=None):
     if len(signals) == 0:
         raise ValueError("At least one signal must be provided.")
-
     
     # User must input one ylabel for every inputted signal
     label = np.asarray(label)
