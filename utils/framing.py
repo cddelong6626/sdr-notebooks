@@ -1,7 +1,9 @@
 
+from dataclasses import dataclass
 import numpy as np
 from scipy import signal
 
+from .channel import apply_cfo
 
 
 ### PREAMBLES ###
@@ -53,22 +55,24 @@ class FrameDetector:
     """
     Detect frames within a signal using a preamble
     
-    This parent class contains the FSM and buffering logic. Child classes must implement a detect_preamble() method
+    This parent class contains the FSM and buffering logic. Child classes must implement a _detect_preamble() method
     """
     def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8):
-        self.preamble = preamble
-        self.expected_frame_length = expected_frame_length
         self.detection_threshold = detection_threshold
+        self.expected_frame_length = expected_frame_length
+        self.preamble = preamble
 
-        self.state = "SEARCH"
+        self._state = "SEARCH"
         self.buffer = np.empty(0, dtype=np.complex128)
 
         self.debug = None
         
+
     def process(self, new_samples: np.ndarray):
         """Update the buffer and check if there are any frames detected"""
         self.buffer = np.concatenate((self.buffer, new_samples))
-        frames = []
+        results = []
+        idx = 0
 
         while True:
             # Pause state machine when buffer can't hold a frame
@@ -76,38 +80,51 @@ class FrameDetector:
                 break
 
             # SEARCH state: Search for preamble within buffer
-            if self.state == "SEARCH":
-                idx = self.detect_preamble()
-                if idx is not None:
-                    self.buffer = self.buffer[idx:]
-                    self.state = "ACQUIRE"
+            if self._state == "SEARCH":
+                res = self._detect_preamble()
+                if res is not None:
+                    results.append(res)
+                    self.buffer = self.buffer[res.idx:]
+                    self._state = "ACQUIRE"
                     continue
                 else:   # If no preamble is detected: pause search
                     self.buffer = self.buffer[-len(self.preamble):]
                     break
 
-            # ACQUIRE state: Add found frame to frames array
-            if self.state == "ACQUIRE":
+            # ACQUIRE state: Add result to list of results
+            if self._state == "ACQUIRE":
                 frame = np.array(self.buffer[:self.expected_frame_length])
-                frames.append(frame)
+                results[idx].frame = frame
+                idx += 1
+
                 self.buffer = self.buffer[self.expected_frame_length:]
-                self.state = "SEARCH"
+                self._state = "SEARCH"
                 continue
 
-        return frames
+        return results
 
-    def detect_preamble(self):
+    def _detect_preamble(self):
         """Return the index of the first detected preamble or None if no preamble is detected"""
         raise NotImplementedError()
     
 
+@dataclass
+class DetectionResult:
+    frame: np.ndarray = None
+    metric: float = None
+    idx: int = None
+    cfo: float = None
+
+
 class CorrelationFrameDetector(FrameDetector):
     """Detect frames using correlation with the complex conjugate of the preamble"""
-    def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8):
+    def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8, mode='first'):
         self._preamble = None
         self._preamble_norm = None
         self._matched_filter = None
         super().__init__(preamble, expected_frame_length, detection_threshold)
+
+        self.mode = mode
 
     @property
     def preamble(self):
@@ -120,7 +137,17 @@ class CorrelationFrameDetector(FrameDetector):
         self._preamble_norm = np.sum(np.abs(value) ** 2)
         self._matched_filter = value[::-1].conj()
     
-    def detect_preamble(self):
+    @property
+    def mode(self):
+        return self._mode
+    
+    @mode.setter
+    def mode(self, value: str):
+        if value not in ['first', 'max']:
+            raise ValueError("Frame detection mode must either be 'first' or 'max'")
+        self._mode = value
+
+    def _detect_preamble(self):
         """Apply matched filter to signal and report the index of the first spike"""
         matched = signal.convolve(self._matched_filter, self.buffer, mode='valid')
 
@@ -134,13 +161,27 @@ class CorrelationFrameDetector(FrameDetector):
         # Metric = Energy of matched / (product of energies of filter and window)
         # This makes detection more robust to noise and varying SNRs
         metric = (np.abs(matched) ** 2) / normalization
-        peaks = np.where(metric > self.detection_threshold)
+
+        if self.mode == 'first':
+            peaks = np.where(metric > self.detection_threshold)
+            if len(peaks[0]) == 0:
+                return None
+            idx = peaks[0][0]
+        elif self.mode == 'max':
+            idx = np.argmax(metric)
+
+        m_ret = metric[idx]
+        res = DetectionResult(idx=idx, metric=m_ret)
+
 
         if self.debug is None: # TODO: REMOVE
-            self.debug = metric
+            self.debug = (metric, self._preamble, self.buffer[idx:idx+len(self._preamble)])
 
-        return peaks[0][0] if len(peaks[0]) > 0 else None
-    
+
+        return res
+        
+
+
 class DifferentialCorrelationFrameDetector(FrameDetector):
     """Detect frames using differential correlation with the complex conjugate of the preamble"""
     def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.8):
@@ -162,7 +203,7 @@ class DifferentialCorrelationFrameDetector(FrameDetector):
         self._preamble_norm = np.sum(np.abs(self._preamble) ** 2)
         self._matched_filter = self._preamble[::-1].conj()
     
-    def detect_preamble(self):
+    def _detect_preamble(self):
         """Apply matched filter to signal and report the index of the first spike"""
         dbuffer = self.buffer[1:] - self.buffer[:-1]
         matched = signal.convolve(self._matched_filter, dbuffer, mode='valid')
@@ -182,8 +223,82 @@ class DifferentialCorrelationFrameDetector(FrameDetector):
         if self.debug is None: # TODO: REMOVE
             self.debug = (metric, self._preamble, dbuffer[peaks[0][0]:peaks[0][0]+len(self._preamble)])
 
-        return peaks[0][0] if len(peaks[0]) > 0 else None
+        if len(peaks[0]) == 0:
+            return None
+
+        idx = peaks[0][0]
+        m_ret = metric[idx]
+        res = DetectionResult(idx=idx, metric=m_ret)
+
+        return res
     
+
+class AcquisitionFrameDetector(FrameDetector):
+    """Uses multiple correlation detectors with different CFO hypotheses to acquire the best initial frame based on maximum correlation metric"""
+    def __init__(self, preamble: np.ndarray, expected_frame_length: int, detection_threshold: float=0.5, cfo_vector: np.ndarray=np.linspace(0, 0.05*(2*np.pi/100), 6)):
+        self._preamble = None
+        self._preamble_norm = None
+        self._cfo_vector = cfo_vector
+        self._preambles = []
+        self._corr_detectors = []
+
+        self.cfo_vector = cfo_vector
+        super().__init__(preamble, expected_frame_length, detection_threshold)
+
+    @property
+    def preamble(self):
+        return self._preamble
+    
+    @preamble.setter
+    def preamble(self, value: np.ndarray):
+        self._preamble = value
+        self._preamble_norm = np.sum(np.abs(value) ** 2)
+        if self.cfo_vector is not None:
+            self._generate_preamble_hypotheses()
+            self._generate_corr_detectors()
+        
+    @property
+    def cfo_vector(self):
+        return self._cfo_vector
+    
+    @cfo_vector.setter
+    def cfo_vector(self, value: np.ndarray):
+        self._cfo_vector = value
+        if self.preamble is not None:
+            self._generate_preamble_hypotheses()
+            self._generate_corr_detectors()
+
+    def _generate_preamble_hypotheses(self):
+        self._preambles = []
+        for cfo in self.cfo_vector:
+            preamble_off = apply_cfo(self.preamble, w_offset=cfo)
+            self._preambles.append(preamble_off)
+
+    def _generate_corr_detectors(self):
+        # Create new CorrelationFrameDetector objects
+        self._corr_detectors = [CorrelationFrameDetector(filt, self.expected_frame_length, self.detection_threshold, mode='max') for filt in self._preambles]
+
+    def _detect_preamble(self):
+        # Process buffer using all detectors
+        results = []
+        metrics = []
+        for i, det in enumerate(self._corr_detectors):
+            res = det.process(self.buffer)[0]
+            if res is not None:
+                res.cfo = self.cfo_vector[i]
+                results.append(res)
+                metrics.append(res.metric)
+
+        if len(metrics) == 0:
+            # No frame detected
+            return None
+
+        # Select result with the highest metric
+        best_idx = np.argmax(metrics)
+        best_res = results[best_idx]
+        return best_res
+        
+
 
 class SCFrameDetector(FrameDetector):
     """

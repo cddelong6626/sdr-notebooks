@@ -98,7 +98,7 @@ class CoarseCFOCorrector(ABC):
     def process(self, new_samples):
         """Estimate frequency offset based on the first preamble detected in an array of samples"""
         # Detect preamble
-        preambles = self._fd.process(new_samples)
+        preambles = [detected.frame for detected in self._fd.process(new_samples)]
         self.debug = preambles
 
         # No preambles detected: no guess made
@@ -179,7 +179,7 @@ class SCCoarseCFOCorrector(CoarseCFOCorrector):
 
 class PhaseDriftCFOCorrector(CoarseCFOCorrector):
     """Coarsely estimate CFO based on phase drift of preamble over time"""
-    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.6, detector_cls=DifferentialCorrelationFrameDetector):
+    def __init__(self, preamble: np.ndarray, detection_threshold: float=0.5, detector_cls=DifferentialCorrelationFrameDetector):
         super().__init__(preamble, detection_threshold, detector_cls)
 
     def estimate_cfo(self, rx_preamble: np.ndarray):
