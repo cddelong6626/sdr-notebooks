@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail # strict mode: exit on error, unset vars are errors
+
+# Configurable
+EXTRA_FLAGS="-Wall -Wextra -O3"
+BUILD_TYPE="Release"
+
+# Parse args
+if [[ "${1:-}" == "--debug" ]]; then
+    BUILD_TYPE="Debug"
+    EXTRA_FLAGS="-Wall -Wextra -O0 -g"
+fi
+
+# Build dir depends on type
+BUILD_DIR="build-${BUILD_TYPE,,}"  # e.g., build-release, build-debug
+CXX_COMPILER="clang++"
+
+# Check KFR_PATH
+if [ -z "${KFR_PATH:-}" ]; then
+	echo "Error: KFR_PATH is not set. Please set it to the directory containing KFRConfig.cmake."
+	exit 1
+fi
+
+# Always clean before build
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>> Cleaning build directory >>>>>>>>>>>>>>>>>>>>>>>>>>>"
+rm -rf "$BUILD_DIR"
+
+# Configure 
+echo
+echo ">>>>>>>>>>>>>>>>>>>>>>> Configuring with Clang and Ninja >>>>>>>>>>>>>>>>>>>>>>>"
+cmake -S . -B "$BUILD_DIR" \
+	-G Ninja \
+	-DCMAKE_CXX_COMPILER="$CXX_COMPILER" \
+	-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+	-DCMAKE_CXX_FLAGS="$EXTRA_FLAGS" \
+	-DCMAKE_PREFIX_PATH="$KFR_PATH"
+
+# Build
+echo
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Building >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+cmake --build "$BUILD_DIR"
+
+# Install
+echo
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Installing >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+cmake --install "$BUILD_DIR"
+
+# Finished
+echo
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Donezo! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+

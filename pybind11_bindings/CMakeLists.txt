@@ -1,21 +1,13 @@
-file(GLOB SRC_FILES dsp/*.cpp python/*.cpp)
 
-pybind11_add_module(sdr_cpp ${SRC_FILES})
-
-target_include_directories(sdr_cpp PRIVATE dsp)
-
+# Build C++ libraries for usage in python notebooks and C++ SDR software
+#  * sdrlib: C++ library including implementations of SDR algorithms intended for real-time processing
+#  * py_sdrlib: Python library with bindings to sdrlib
 
 cmake_minimum_required(VERSION 3.15)
-project(dsp_cpp LANGUAGES CXX)
+project(sdr-notebooks LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Set default build type to Release
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# Add subdirectories
-add_subdirectory(dsp)
-add_subdirectory(python)
+add_subdirectory(sdrlib)
+add_subdirectory(py_bindings)
