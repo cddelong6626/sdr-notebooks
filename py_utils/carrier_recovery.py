@@ -30,7 +30,7 @@ class PhaseLockDetector:
         return self.is_locked
 
 # njit sped up function from ~6s to ~0.6s
-@njit
+# @njit
 def costas_loop(symbols, control, lock_detector=None, debug=None, theta=None):
     if theta is None: theta = 0.0
     sym_rot = np.empty(len(symbols), dtype=np.complex128)

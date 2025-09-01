@@ -1,7 +1,8 @@
 # Build library using pybind11
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
-pybind11_add_module(py_sdrlib bindings.cpp)
+file(GLOB_RECURSE BINDINGS_SOURCES ./*.cpp)
+pybind11_add_module(py_sdrlib ${BINDINGS_SOURCES})
 
 # Allow usage of NumPy bindings
 target_compile_definitions(py_sdrlib PRIVATE PYBIND11_NUMPY)

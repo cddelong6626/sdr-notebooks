@@ -108,7 +108,7 @@ class GardnerSymbolTimingCorrector(SymbolTimingCorrector):
             raise ValueError("No input signal provided.")
 
         if n is None:
-            n = self.SIG_SIZE
+            n = self.SIG_SIZE - 1
 
         out = []
         while self.i < n:

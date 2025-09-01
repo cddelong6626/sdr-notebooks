@@ -2,8 +2,8 @@
 set -euo pipefail # strict mode: exit on error, unset vars are errors
 
 # Configurable
-EXTRA_FLAGS="-Wall -Wextra -O3"
 BUILD_TYPE="Release"
+EXTRA_FLAGS="-Wall -Wextra -O3"
 
 # Parse args
 if [[ "${1:-}" == "--debug" ]]; then

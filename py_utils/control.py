@@ -11,7 +11,7 @@ spec = [
     ('sum_e', float64),
     ('prev_e', float64),
 ]
-@jitclass(spec)
+# @jitclass(spec)
 class PIDFeedback:
     def __init__(self, K_p=0.0, K_i=0.0, K_d=0.0):
         self.K_p = K_p
@@ -23,7 +23,7 @@ class PIDFeedback:
 
     def update(self, e):
         self.sum_e += e
-        d = self.prev_e - e
+        d = e - self.prev_e
         x = (self.K_i * self.sum_e) + (self.K_p * e) + (self.K_d * d)
 
         self.prev_e = e
