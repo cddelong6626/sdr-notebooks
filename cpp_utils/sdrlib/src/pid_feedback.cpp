@@ -6,16 +6,16 @@
 namespace sdrlib::control {
 
 
-PIDFeedback::PIDFeedback(float K_p, float K_i, float K_d)
-        : K_p_(K_p), K_i_(K_i), K_d_(K_d) {}
+PIDFeedback::PIDFeedback(float Kp, float Ki, float Kd)
+        : K_p(Kp), K_i(Ki), K_d(Kd) {}
 
 float PIDFeedback::update(float e) {
     // Calculate update to input value
     sum_e += e;
     float result = 
-        (K_i_ * sum_e) + 
-        (K_p_ * e) + 
-        (K_d_ * (e - prev_e));
+        (K_i * sum_e) + 
+        (K_p * e) + 
+        (K_d * (e - prev_e));
 
     // Update previous error
     prev_e = e;
