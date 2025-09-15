@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Configurable
+BUILD_TYPE="Release"
+EXTRA_FLAGS="--output-on-failure --progress"
+
+# Parse args
+if [[ "${1:-}" == "--debug" ]]; then
+    BUILD_TYPE="Debug"
+fi
+
+# Build dir depends on type
+BUILD_DIR="build-${BUILD_TYPE,,}"  # e.g., build-release, build-debug
+
+# Run tests
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Running Tests >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+ctest --test-dir "$BUILD_DIR" $EXTRA_FLAGS

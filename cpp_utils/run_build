@@ -21,10 +21,6 @@ if [ -z "${KFR_PATH:-}" ]; then
 	exit 1
 fi
 
-# Always clean before build
-echo ">>>>>>>>>>>>>>>>>>>>>>>>>>> Cleaning build directory >>>>>>>>>>>>>>>>>>>>>>>>>>>"
-rm -rf "$BUILD_DIR"
-
 # Configure 
 echo
 echo ">>>>>>>>>>>>>>>>>>>>>>> Configuring with Clang and Ninja >>>>>>>>>>>>>>>>>>>>>>>"
