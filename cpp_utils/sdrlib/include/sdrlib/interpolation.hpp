@@ -1,7 +1,6 @@
 
 #pragma once
 #include <complex>
-#include <iostream>
 #include <kfr/all.hpp>
 #include <sdrlib/types.hpp>
 

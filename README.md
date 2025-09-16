@@ -1,58 +1,89 @@
-# SDR Notebooks
+# SDR Notebooks & Libraries
 
 ![WIP](https://img.shields.io/badge/status-WIP-orange)
 
 > **Work In Progress**  
-> This project is under active development. Core features are incomplete, and the implementation and interface are subject to change.  
+> This project is under active development. Core features are incomplete, and the implementation and interface are subject to change.
 
-This repo contains a collection of Jupyter notebooks for exploring signal processing topics in digital communications and software-defined radio (SDR). It supports algorithm development and design decisions for larger projects like `qpsk-pluto2rtl-pipeline` and `ofdm-pluto2rtl-pipeline`.
+---
 
-## Topics Covered
+## Motivation
 
-- Carrier recovery (Costas loop)
-- Symbol timing recovery (Gardner, Mueller-Muller, etc.)
-- Interpolation techniques (Farrow structure, Linear)
-- Modulation/demodulation (QPSK, OFDM)
-- Constellation shaping and filtering
+Modern digital communications and SDR (Software Defined Radio) systems are complex, requiring careful design, simulation, and optimization of algorithms for synchronization, channel estimation, equalization, and more.  
+This repository was created to provide a flexible, research-oriented environment for:
 
+- **Rapid prototyping:** Quickly develop and test new SDR algorithms in Python using Jupyter notebooks.
+- **Performance and deployment:** Port validated algorithms to C++ for high-performance, real-time operation.
+- **Education and research:** Serve as a learning tool and a platform for exploring advanced topics in digital communications.
 
-## Structure
+The end goal is to implement robust QPSK and OFDM pipelines that can run in real time, transmitting on an ADALM-Pluto SDR and receiving on an RTL-SDR, with all core DSP algorithms developed and validated in this repository.
 
+---
+
+## Overview
+
+This repository is a research and prototyping environment for modern digital communications and software-defined radio (SDR) algorithms.  
+Algorithms are developed in Python, ported to C++, and ultimately deployed as custom GNU Radio blocks in other repositories for real-time pipelines.
+
+- **Python prototyping workflow:** Develop and validate algorithms in Python (`notebooks/`, `py_utils/`).
+- **C++ for performance:** Port algorithms to C++ (`cpp_utils/`) for real-time use.
+- **GNU Radio integration:** Final C++ code will be packaged as custom blocks for live SDR pipelines.
+- **Hardware targets:** Designed to be used with PlutoSDR (transmit) and RTL-SDR (receive).
+
+---
+
+## Project Structure
+
+- `notebooks/` — Jupyter notebooks for algorithm exploration and simulation
+- `py_utils/` — Python DSP/SDR library (prototyping and reference)
+- `cpp_utils/` — C++ DSP/SDR library, unit tests, and Python bindings
+
+---
+
+## Related Repositories
+
+- [qpsk-pluto2rtl-pipeline](https://github.com/cddelong6626/qpsk-pluto2rtl-pipeline)  
+  Final QPSK pipeline, C++ algorithms, and custom GNU Radio blocks (WIP)
+
+- [ofdm-pluto2rtl-pipeline](https://github.com/cddelong6626/ofdm-pluto2rtl-pipeline)  
+  Final OFDM pipeline, C++ algorithms, and custom GNU Radio blocks (WIP)
+
+---
+
+## Setup Requirements
+
+### System Packages
+
+```sh
+# Ubuntu/Debian example
+sudo apt update
+sudo apt install -y clang ninja-build cmake python3 python3-pip python3-venv \
+    libgtest-dev libeigen3-dev
+
+# For KFR DSP library, follow instructions at https://www.kfrlib.com/
+# For pybind11 (for C++/Python bindings)
+sudo apt install -y pybind11-dev
 ```
-sdr-notebooks/
-├── notebooks/                 # Interactive experiments, simulations, and visualizations
-│   ├── qpsk_sim.ipynb         # QPSK modulation + timing/sync pipeline simulation
-│   ├── ofdm_sim.ipynb         # Combined QPSK/OFDM pipeline simulation
-...
-│
-├── utils/                     # Pure Python DSP + SDR utilities
-│   ├── channel.py             # Fading, noise, and multipath models
-│   ├── coding.py              # Forward error correction
-│   ├── equalization.py        # Linear/ZF/MMSE equalizers
-│   ├── filters.py             # Matched filtering, resampling
-│   ├── interpolators.py       # Linear/Farrow (cubic Lagrange) interpolation
-│   ├── modulation.py          # QPSK/OFDM mod/demod
-│   ├── metrics.py             # BER, EVM, etc.
-│   ├── carrier_recovery.py    # Costas loop
-│   ├── timing_recovery.py     # Gardner, M&M, correlation methods, etc.
-│   ├── visualization.py       # Frequency spectrums, constellations, etc.
-...
-│
-├── pybind11_bindings/         # C++ algorithms and Python bindings (via pybind11)
-│   ├── dsp/                   # C++ implementations
-│   └── python/                # Pybind11 interface code
-│
-├── CMakeLists.txt             # CMake build file for binding C++ to Python
-├── setup.py                   # For pip-installable development
-└── README.md                  # This file
+
+---
+
+## Building C++ Code
+
+```sh
+cd cpp_utils
+./run_build      # Build the C++ library and Python bindings
+./run_tests      # Run unit tests
 ```
 
-## Goals
+---
 
-- Use this pipeline as a learning and demonstration tool for SDR systems
-- Explore trade-offs in synchronization and equalization to use on real hardware
-- Eventually extend to support adaptive equalization and ML-based blocks
+## Running Notebooks
 
-## Screenshots
+```sh
+cd notebooks
+jupyter notebook
+```
 
-TODO
+---
+
+## See subproject README.md files for more details.

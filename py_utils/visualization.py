@@ -21,6 +21,8 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title='Signal',
         raise ValueError("Must have equal number of signals and ylabels.")
 
     # Determine the default x-axis (independent variable)
+    if n_samps is None or n_samps > len(signals[0]):
+        n_samps = len(signals[0])
     if x is not None:
         x = np.asarray(x)
         if xlim is None:
@@ -33,8 +35,6 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title='Signal',
     else:
         # Use default index-based x
         if xlim is None:
-            if n_samps is None or n_samps > len(signals[0]):
-                n_samps = len(signals[0])
             xlim = [0, n_samps - 1]
         start, stop = xlim[0], xlim[1] + 1
         x = np.arange(start, stop)

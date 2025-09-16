@@ -1,5 +1,4 @@
 #include <complex>
-#include <iostream> //TODO: remove
 #include <kfr/base.hpp>
 
 #include "sdrlib/interpolation.hpp"
@@ -33,22 +32,23 @@ sdrlib::cpx CubicFarrowInterpolator::interpolate(float frac_off, int int_off) {
         kfr::dotproduct(segment_vec, COEFFS(0)), kfr::dotproduct(segment_vec, COEFFS(1)),
         kfr::dotproduct(segment_vec, COEFFS(2)), kfr::dotproduct(segment_vec, COEFFS(3))};
 
-    // Determine index + fractional offset to approximate
-    float mu = frac_off - int_off;
+    // Determine integer offset + fractional offset to approximate
+    float mu = int_off + frac_off;
 
-    // Calculate the required powers of mu to avoid 0^0 issues in case of mu=0
-    cvec powers = {1.0f, mu, mu * mu, mu * mu * mu};
+    // Calculate the required powers of mu
+    // (Avoid 0^0 issues in case of mu=0 by explicitly setting first term to 1)
+    sdrlib::cvec powers = {1.0f, mu, mu * mu, mu * mu * mu};
 
     // Calculate approximation: c0 + c1*mu + c2*mu^2 + c3*mu^3
-    cpx result = kfr::dotproduct(c_k, powers);
+    sdrlib::cpx result = kfr::dotproduct(c_k, powers);
 
     return result;
 }
 
 void CubicFarrowInterpolator::process(sdrlib::cpx *buf_in, sdrlib::cpx *buf_out, size_t n,
                                       float frac_off, int int_off) {
-    load(buf_in, n);
     for (size_t i = 0; i < n; ++i) {
+        load(buf_in[i]);
         buf_out[i] = interpolate(frac_off, int_off);
     }
 }
