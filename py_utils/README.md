@@ -9,6 +9,15 @@ This module contains modular, pure-Python implementations of SDR and DSP algorit
 - Modulation/demodulation (QPSK, OFDM)
 - Equalization, coding, metrics, visualization, and more
 
+## Installation
+
+Clone this repo and navigate to sdr-notebooks/py_utils. Install in editable mode:
+
+```bash
+cd py_utils
+pip install -e .
+```
+
 ## Usage
 
 ```python

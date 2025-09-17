@@ -4,9 +4,24 @@ This directory contains Jupyter notebooks for exploring, simulating, and visuali
 
 ## Usage
 
+### Install Required Packages
+
+#### Python packages
 ```sh
 cd notebooks
-jupyter notebook
+pip install -r requirements.txt
+```
+
+#### C++ SDR Library
+```sh
+cd cpp_utils
+./run_build
+```
+
+### Open Notebooks
+```sh
+cd notebooks
+python -m notebook
 ```
 
 ## Notebooks

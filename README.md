@@ -57,10 +57,9 @@ Algorithms are developed in Python, ported to C++, and ultimately deployed as cu
 ```sh
 # Ubuntu/Debian example
 sudo apt update
-sudo apt install -y clang ninja-build cmake python3 python3-pip python3-venv \
-    libgtest-dev libeigen3-dev
+sudo apt install -y jupyter-notebook jupyter
 
-# For KFR DSP library, follow instructions at https://www.kfrlib.com/
+# For KFR DSP library, follow instructions at https://www.kfrlib.com/docs/latest/installation/
 # For pybind11 (for C++/Python bindings)
 sudo apt install -y pybind11-dev
 ```
