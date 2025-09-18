@@ -10,7 +10,9 @@ namespace py = pybind11;
 
 void bind_interpolation(pybind11::module_ &m) {
 
-    py::class_<sdrlib::interpolation::CubicFarrowInterpolator>(m, "CubicFarrowInterpolator")
+    py::module_ interpolation = m.def_submodule("interpolation", "Interpolation algorithms");
+
+    py::class_<sdrlib::interpolation::CubicFarrowInterpolator>(interpolation, "CubicFarrowInterpolator")
         .def(py::init<>())
         .def("reset", &sdrlib::interpolation::CubicFarrowInterpolator::reset)
         .def("load",
@@ -18,11 +20,11 @@ void bind_interpolation(pybind11::module_ &m) {
         .def("load",
              [](sdrlib::interpolation::CubicFarrowInterpolator &self,
                 py::array_t<sdrlib::cpx> pyarr_in) {
-                 py::buffer_info info = pyarr_in.request();
-                 sdrlib::cpx *buf_in = static_cast<sdrlib::cpx *>(info.ptr);
-                 size_t size = static_cast<size_t>(info.size);
+                size_t size = pyarr_in.size();
+                py::buffer_info info = pyarr_in.request();
+                sdrlib::cpx *buf_in = static_cast<sdrlib::cpx *>(info.ptr);
 
-                 self.load(buf_in, size);
+                self.load(buf_in, size);
              })
         .def("interpolate", &sdrlib::interpolation::CubicFarrowInterpolator::interpolate)
         .def(

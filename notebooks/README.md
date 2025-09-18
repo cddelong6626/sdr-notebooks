@@ -2,6 +2,7 @@
 
 This directory contains Jupyter notebooks for exploring, simulating, and visualizing SDR and digital communications algorithms.
 
+---
 ## Usage
 
 ### Install Required Packages
@@ -24,12 +25,14 @@ cd notebooks
 python -m notebook
 ```
 
+---
 ## Notebooks
 
 - `qpsk_sim.ipynb` — QPSK modulation/demodulation, timing and carrier recovery
 - `ofdm_sim.ipynb` — End-to-end OFDM pipeline simulation
 - `*_dev.ipynb` - Development notebook
 
+---
 ## Purpose
 
 - Rapid prototyping and visualization

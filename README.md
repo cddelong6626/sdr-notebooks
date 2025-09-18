@@ -5,6 +5,9 @@
 > **Work In Progress**  
 > This project is under active development. Core features are incomplete, and the implementation and interface are subject to change.
 
+![Recieved signal](images/front_page/sig_after_channel.png)
+![Signal after recovery](images/front_page/sig_after_synch.png)
+
 ---
 
 ## Motivation

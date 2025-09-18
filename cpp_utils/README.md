@@ -2,17 +2,20 @@
 
 This project contains high-performance C++ implementations of SDR algorithms, with unit tests and Python bindings.
 
+---
 ## Structure
 
 - `sdrlib/` — Core C++ library (`src/`, `include/`, `tests/`)
 - `py_bindings/` — pybind11 bindings for Python interoperability
 
+---
 ## Features
 
 - C++ ports of Python algorithms for real-time use
 - Unit tests (Google Test)
 - Python bindings for seamless integration with Python workflows
 
+---
 ## Requirements
 
 - **Compiler:** clang
@@ -35,6 +38,7 @@ export KFR_PATH=/path/to/kfr/targets/lib/cmake/kfr
 
 After building, Python bindings are automatically added to the python site-packages of your current python env as the module `py_sdrlib` by the build script.
 
+---
 ## Purpose
 
 - High-performance, real-time SDR algorithms

@@ -5,7 +5,9 @@ namespace py = pybind11;
 
 void bind_control(pybind11::module_ &m) {
 
-    py::class_<sdrlib::control::PIDFeedback>(m, "PIDFeedback")
+    py::module_ control = m.def_submodule("control", "Control systems");
+
+    py::class_<sdrlib::control::PIDFeedback>(control, "PIDFeedback")
         .def(py::init<float, float, float>(), py::arg("K_p") = 0.0f, py::arg("K_i") = 0.0f,
              py::arg("K_d") = 0.0f)
         .def("update", &sdrlib::control::PIDFeedback::update)
