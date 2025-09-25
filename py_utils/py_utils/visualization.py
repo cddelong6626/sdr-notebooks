@@ -202,7 +202,7 @@ def plot_spectrum(signal, size=None, n_samples=None, Fs=None,
 
 ### Modulation ###
 
-def plot_constellation(signal, n_samples=1000, offset=0, ax=None, title="Constellation Plot"):
+def plot_constellation(signal, n_samples=1000, offset=0, ax=None, title="Constellation Plot", xlim=None):
     """
     Plot a constellation diagram from a complex-valued signal.
 
@@ -212,10 +212,14 @@ def plot_constellation(signal, n_samples=1000, offset=0, ax=None, title="Constel
         Complex input signal representing modulated symbols.
     n_samples : int, optional
         Maximum number of points to display. Default is 1000.
+    offset : int, optional
+        Starting index for the signal. Default is 0.
     ax : matplotlib.axes.Axes, optional
         Existing axes to draw on. If None, a new figure and axes are created.
     title : str, optional
         Plot title. Default is "Constellation Plot".
+    xlim : tuple of (int, int), optional
+        Indices of the signal to plot: (start, stop). If None, uses offset and n_samples.
 
     Returns
     -------
@@ -224,9 +228,15 @@ def plot_constellation(signal, n_samples=1000, offset=0, ax=None, title="Constel
     ax : matplotlib.axes.Axes
         The axes with the plotted constellation diagram.
     """
-    signal = np.asarray(signal)[offset:offset+n_samples]
+    signal = np.asarray(signal)
     if not np.iscomplexobj(signal):
         raise ValueError("Input signal must be complex for constellation plot.")
+
+    if xlim is not None:
+        start, stop = xlim
+        signal = signal[start:stop]
+    else:
+        signal = signal[offset:offset+n_samples]
 
     if ax is None:
         fig, ax = plt.subplots()

@@ -8,23 +8,23 @@ namespace sdrlib::interpolation {
 
 void CubicFarrowInterpolator::reset() {
     // Clear the buffer back to zeros
-    cursor = 0;
-    buffer.ringbuf_write(cursor, 0.0f);
-    buffer.ringbuf_write(cursor, 0.0f);
-    buffer.ringbuf_write(cursor, 0.0f);
-    buffer.ringbuf_write(cursor, 0.0f);
+    buffer_idx = 0;
+    buffer.ringbuf_write(buffer_idx, 0.0f);
+    buffer.ringbuf_write(buffer_idx, 0.0f);
+    buffer.ringbuf_write(buffer_idx, 0.0f);
+    buffer.ringbuf_write(buffer_idx, 0.0f);
 }
 
-void CubicFarrowInterpolator::load(sdrlib::cpx sample) { buffer.ringbuf_write(cursor, sample); }
+void CubicFarrowInterpolator::load(sdrlib::cpx sample) { buffer.ringbuf_write(buffer_idx, sample); }
 void CubicFarrowInterpolator::load(sdrlib::cpx *buf_in, size_t size) {
-    buffer.ringbuf_write(cursor, buf_in, size);
+    buffer.ringbuf_write(buffer_idx, buf_in, size);
 }
 
 sdrlib::cpx CubicFarrowInterpolator::interpolate(float frac_off, int int_off) {
     // TODO: Assert range for integer_offset
     //  Build sample segment starting at position integer_offset
     sdrlib::cpx *segment_buf = new sdrlib::cpx[N_TAPS];
-    buffer.ringbuf_read(cursor, segment_buf, N_TAPS);
+    buffer.ringbuf_read(buffer_idx, segment_buf, N_TAPS);
     sdrlib::cvec segment_vec = kfr::make_univector(segment_buf, N_TAPS);
 
     // Use FIR filters to calculate the polynomial coefficients

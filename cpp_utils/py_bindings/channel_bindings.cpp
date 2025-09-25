@@ -13,8 +13,7 @@ void bind_channel(pybind11::module_ &m) {
 
     channel.def(
         "apply_cfo",
-        [](py::array_t<sdrlib::cpx> pyarr_in, py::array_t<sdrlib::cpx> pyarr_out,
-           float w_offset) {
+        [](py::array_t<sdrlib::cpx> pyarr_in, py::array_t<sdrlib::cpx> pyarr_out, float w_offset) {
             size_t n = pyarr_in.size();
             std::complex<float> *buf_in = static_cast<sdrlib::cpx *>(pyarr_in.request().ptr);
             std::complex<float> *buf_out = static_cast<sdrlib::cpx *>(pyarr_out.request().ptr);

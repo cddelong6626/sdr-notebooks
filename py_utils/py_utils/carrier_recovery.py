@@ -4,7 +4,9 @@ from numba import njit
 from numba.experimental import jitclass
 import numpy as np
 from .framing import DifferentialCorrelationFrameDetector
+from .control import PIDFeedback
 from abc import ABC
+import math
 
 
 spec = [
@@ -31,7 +33,7 @@ class PhaseLockDetector:
 
 # njit sped up function from ~6s to ~0.6s
 @njit
-def costas_loop(symbols, control, error_history=None, theta=None):
+def costas_loop(symbols, controller, error_history=None, theta=None):
     if theta is None: theta = 0.0
     sym_rot = np.empty(len(symbols), dtype=np.complex64)
 
@@ -46,11 +48,65 @@ def costas_loop(symbols, control, error_history=None, theta=None):
         e = np.angle(sym_rot[i] * np.conj(ref))
 
         # Update VCO input
-        theta += control.update(e)
+        theta += controller.update(e)
         if error_history is not None: error_history[i] = e
 
     return sym_rot
 
+class CostasLoopQPSK:
+    def __init__(self, loop_bw: float):
+        # Recommended loop bandwidth: R/20 to R/200 where R = sample rate
+        # Found at: https://john-gentile.com/kb/dsp/PI_filter.html
+        self.loop_bw = loop_bw
+
+        self.error_history = None
+        self.correction = 0.0
+
+    @property
+    def loop_bw(self):
+        return self._loop_bw
+
+    @loop_bw.setter
+    def loop_bw(self, value):
+        # Below equations derived at: https://john-gentile.com/kb/dsp/PI_filter.html
+        self._loop_bw = value
+
+        damping_factor = 0.707
+        alpha = 1 - 2 * damping_factor**2
+        scaled_bw = self._loop_bw / math.sqrt(alpha + math.sqrt(alpha**2 + 1))
+        K_d = 1
+        K_p = 2*damping_factor*scaled_bw/K_d
+        K_i = scaled_bw**2 / K_d
+
+        self.controller = PIDFeedback(K_p=K_p, K_i=K_i)
+
+    def reset(self):
+        self.error_history = None
+        self.correction = 0.0
+
+    def process(self, symbols_in, symbols_out):
+        # Ensure error history is allocated
+        if self.error_history is None or len(self.error_history) != len(symbols_in):
+            self.error_history = np.empty(len(symbols_in), dtype=np.float32)
+
+        # Costas Loop algorithm
+        if len(symbols_out) != len(symbols_in):
+            raise ValueError("symbols_out must be the same length as symbols_in")
+
+        for i, s in enumerate(symbols_in):
+            # Rotate signal by current VCO phase
+            symbols_out[i] = s * np.exp(-1j*self.correction)
+
+            # Decision directed error signal
+            I = symbols_out[i].real
+            Q = symbols_out[i].imag
+            ref = np.sign(I) + 1j*np.sign(Q)
+            e = np.angle(symbols_out[i] * np.conj(ref))
+            self.error_history[i] = e 
+
+            # Update VCO input
+            self.correction += self.controller.update(e)
+        
 
 class CoarseCFOCorrector(ABC):
     def __init__(self, preamble: np.ndarray, detection_threshold: float=0.6, detector_cls=DifferentialCorrelationFrameDetector):
