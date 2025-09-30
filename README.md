@@ -5,8 +5,8 @@
 > **Work In Progress**  
 > This project is under active development. Core features are incomplete, and the implementation and interface are subject to change.
 
-![Recieved signal](images/front_page/sig_after_channel.png)
-![Signal after recovery](images/front_page/sig_after_synch.png)
+![Recieved signal](./img/front_page/sig_after_channel.png)
+![Signal after recovery](./img/front_page/sig_after_synch.png)
 
 ---
 
@@ -40,6 +40,12 @@ Algorithms are developed in Python, ported to C++, and ultimately deployed as cu
 - `notebooks/` — Jupyter notebooks for algorithm exploration and simulation
 - `py_utils/` — Python DSP/SDR library (prototyping and reference)
 - `cpp_utils/` — C++ DSP/SDR library, unit tests, and Python bindings
+
+### Featured notebook
+
+Check out the completed QPSK demo notebook for a full end-to-end example:
+
+- [notebooks/qpsk_sim.ipynb](./notebooks/qpsk_sim.ipynb)
 
 ---
 

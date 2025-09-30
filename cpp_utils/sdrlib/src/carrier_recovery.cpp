@@ -55,7 +55,7 @@ void CostasLoopQPSK::process_sample(sdrlib::cpx &symbol_in, sdrlib::cpx &symbol_
     float I = symbol_out.real();
     float Q = symbol_out.imag();
 
-    sdrlib::cpx ref = sdrlib::cpx(std::signbit(I), std::signbit(Q));
+    sdrlib::cpx ref = sdrlib::cpx(std::copysign(1.0f, I), std::copysign(1.0f, Q));
     float e = kfr::carg(symbol_out * kfr::cconj(ref));
     error_history.ringbuf_write(error_history_idx, e);
 

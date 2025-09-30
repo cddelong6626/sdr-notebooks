@@ -1,11 +1,10 @@
+#include "sdrlib/carrier_recovery.hpp"
 #include "sdrlib/types.hpp"
 #include <cmath>
 #include <gtest/gtest.h>
 #include <vector>
-#include "sdrlib/carrier_recovery.hpp"
 
 using namespace sdrlib;
-
 
 TEST(CostasLoopQPSK, BasicFunctionality) {
     float loop_bw = 1.0f / 20.0f;
@@ -34,6 +33,13 @@ TEST(CostasLoopQPSK, BasicFunctionality) {
     EXPECT_NEAR(output_symbol.imag(), input_symbol.imag(), 0.5f);
 
     // Check that error history is being recorded
+    // DEBUG: print out error_history
+    std::cout << "Error history: ";
+    for (const auto &e : costas.get_error_history()) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
     auto error_history = costas.get_error_history();
     EXPECT_GT(error_history[0], 0.0f); // There should be some error recorded
 

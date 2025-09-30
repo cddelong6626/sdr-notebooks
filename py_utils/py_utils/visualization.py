@@ -5,11 +5,12 @@ import scipy.signal
 ### Time Domain ###
 
 def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title="Signal",
-                label=None, xlim=None, ylim=None, ax=None, x=None, show_parts=True):
+                label=None, xlim=None, ylim=None, ax=None, x=None, show_parts=True, db=False):
     """
     Plot one or more signals in the time domain.
     If a signal is complex and show_parts=True, the real and imaginary
     parts are plotted as separate traces.
+    Optionally plot magnitude in dB.
 
     Parameters
     ----------
@@ -38,6 +39,8 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title="Signal",
     show_parts : bool, optional
         If True, complex signals are split into real and imaginary parts.
         Default is True.
+    db : bool, optional
+        If True, plot magnitude in dB (20*log10(abs(signal))). Default is False.
 
     Returns
     -------
@@ -56,7 +59,11 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title="Signal",
     expanded_labels = []
     for idx, s in enumerate(signals):
         lbl = label[idx] if label and idx < len(label) else f"Signal {idx+1}"
-        if np.iscomplexobj(s) and show_parts:
+        if db:
+            s_db = 20 * np.log10(np.abs(s) + 1e-12)
+            expanded_signals.append(s_db)
+            expanded_labels.append(lbl + " (dB)")
+        elif np.iscomplexobj(s) and show_parts:
             expanded_signals.append(s.real)
             expanded_labels.append(lbl + " (Re)")
             expanded_signals.append(s.imag)
@@ -95,7 +102,7 @@ def plot_signal(*signals, n_samps=None, ylabel=None, xlabel="n", title="Signal",
 
     ax.set_title(title)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.set_ylabel(ylabel if ylabel else ("Magnitude (dB)" if db else None))
     ax.grid(True)
     if xlim: ax.set_xlim(xlim)
     if ylim: ax.set_ylim(ylim)

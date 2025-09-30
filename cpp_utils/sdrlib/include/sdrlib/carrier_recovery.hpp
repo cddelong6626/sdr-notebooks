@@ -31,7 +31,7 @@ class CostasLoopQPSK {
     /**
      * @brief Circular buffer storing recent error values for monitoring loop performance.
      */
-    sdrlib::fvec error_history = sdrlib::fvec(10000, 0.0f);
+    sdrlib::fvec error_history = sdrlib::fvec(100000, 0.0f);
 
     /**
      * @brief Index for the next error value to be written in the error history buffer.

@@ -14,16 +14,22 @@ void bind_carrier_recovery(pybind11::module_ &m) {
 
     py::class_<sdrlib::carrier_recovery::CostasLoopQPSK>(carrier_recovery, "CostasLoopQPSK")
         .def(py::init<float>(), py::arg("loop_bandwidth"))
-        .def("set_loop_bw", &sdrlib::carrier_recovery::CostasLoopQPSK::set_loop_bw,
-             py::arg("value"))
-        .def("get_loop_bw", &sdrlib::carrier_recovery::CostasLoopQPSK::get_loop_bw)
         .def("reset", &sdrlib::carrier_recovery::CostasLoopQPSK::reset)
+        .def_property(
+            "loop_bw",
+            [](sdrlib::carrier_recovery::CostasLoopQPSK &self) {
+                return self.get_loop_bw();
+            },
+            [](sdrlib::carrier_recovery::CostasLoopQPSK &self, float value) {
+                self.set_loop_bw(value);
+            }
+        )
         .def_property_readonly("error_history",
-             [](sdrlib::carrier_recovery::CostasLoopQPSK &self) {
-                 sdrlib::fvec error_history = self.get_error_history();
-                 return py::array_t<float>(error_history.size(), error_history.data());
-             })
-        .def_property_readonly("loop_bw", &sdrlib::carrier_recovery::CostasLoopQPSK::get_loop_bw)
+                               [](sdrlib::carrier_recovery::CostasLoopQPSK &self) {
+                                   sdrlib::fvec error_history = self.get_error_history();
+                                   return py::array_t<float>(error_history.size(),
+                                                             error_history.data());
+                               })
         .def_property_readonly("correction",
                                &sdrlib::carrier_recovery::CostasLoopQPSK::get_correction)
         .def(
