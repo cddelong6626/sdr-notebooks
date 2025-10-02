@@ -48,7 +48,7 @@ def costas_loop(symbols, controller, error_history=None, theta=None):
         e = np.angle(sym_rot[i] * np.conj(ref))
 
         # Update VCO input
-        theta += controller.update(e)
+        theta += controller.process(e)
         if error_history is not None: error_history[i] = e
 
     return sym_rot
@@ -105,7 +105,7 @@ class CostasLoopQPSK:
             self.error_history[i] = e 
 
             # Update VCO input
-            self.correction += self.controller.update(e)
+            self.correction += self.controller.process(e)
         
 
 class CoarseCFOCorrector(ABC):

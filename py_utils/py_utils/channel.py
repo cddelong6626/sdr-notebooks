@@ -12,17 +12,6 @@ def apply_awgn(signal, snr_db):
     return sig_noisy
 
 
-def apply_cpo(signal, phase_offset=None):
-    """Apply carrier phase offset to signal"""
-
-    if phase_offset is None:
-        phase_offset = 2*np.pi*np.random.rand()  # [radians]
-   
-    sig_offset = signal * np.exp(1j*phase_offset)
-
-    return sig_offset
-
-
 def apply_cfo(signal, pct_offset=0.03, w_offset=None):
     """Apply carrier frequency offset to signal"""
     # testing/realistic: 1-5%, aggressive: 10%

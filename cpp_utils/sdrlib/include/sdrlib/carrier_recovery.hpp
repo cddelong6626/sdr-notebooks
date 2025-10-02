@@ -31,7 +31,7 @@ class CostasLoopQPSK {
     /**
      * @brief Circular buffer storing recent error values for monitoring loop performance.
      */
-    sdrlib::fvec error_history = sdrlib::fvec(100000, 0.0f);
+    sdrlib::fvec error_history;
 
     /**
      * @brief Index for the next error value to be written in the error history buffer.
@@ -47,8 +47,9 @@ class CostasLoopQPSK {
     /**
      * @brief Constructs a CostasLoopQPSK object with the specified loop bandwidth.
      * @param loop_bw The initial loop bandwidth.
+     * @param error_history_size The size of the error history buffer (default: 1024).
      */
-    CostasLoopQPSK(float loop_bw);
+    CostasLoopQPSK(float loop_bw, int error_history_size = 1024);
 
     /**
      * @brief Retrieves the current correction value.

@@ -8,10 +8,11 @@
 
 namespace sdrlib::carrier_recovery {
 
-CostasLoopQPSK::CostasLoopQPSK(float loop_bw) {
+CostasLoopQPSK::CostasLoopQPSK(float loop_bw, int error_history_size) {
     set_loop_bw(loop_bw);
     correction = 0.0f;
 
+    error_history = sdrlib::fvec(error_history_size, 0.0f);
     error_history_idx = 0;
 }
 
@@ -60,7 +61,7 @@ void CostasLoopQPSK::process_sample(sdrlib::cpx &symbol_in, sdrlib::cpx &symbol_
     error_history.ringbuf_write(error_history_idx, e);
 
     // Update correction estimate
-    correction += controller.update(e);
+    correction += controller.process(e);
 }
 
 void CostasLoopQPSK::process(sdrlib::cpx *buf_in, sdrlib::cpx *buf_out, size_t n) {

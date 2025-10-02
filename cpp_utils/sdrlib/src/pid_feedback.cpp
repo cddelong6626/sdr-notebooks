@@ -7,8 +7,8 @@ namespace sdrlib::control {
 
 PIDFeedback::PIDFeedback(float Kp, float Ki, float Kd) : K_p(Kp), K_i(Ki), K_d(Kd) {}
 
-// Update method
-float PIDFeedback::update(float e) {
+// Process method
+float PIDFeedback::process(float e) {
     // Calculate update to input value
     sum_e += e;
     float result = (K_i * sum_e) + (K_p * e) + (K_d * (e - prev_e));

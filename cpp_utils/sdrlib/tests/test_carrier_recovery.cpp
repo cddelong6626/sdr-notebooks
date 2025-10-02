@@ -41,7 +41,7 @@ TEST(CostasLoopQPSK, BasicFunctionality) {
     std::cout << std::endl;
 
     auto error_history = costas.get_error_history();
-    EXPECT_GT(error_history[0], 0.0f); // There should be some error recorded
+    EXPECT_GT(error_history[1], 0.0f); // There should be some error recorded
 
     // Reset the loop and verify state
     costas.reset();

@@ -13,6 +13,11 @@ def modulate_qpsk(bits):
     [1, 0]: -1 +1j
     """
 
+    # Ensure input is a flat array of bits of even length
+    bits = np.asarray(bits).ravel()
+    if len(bits) % 2 != 0:
+        raise ValueError("Input bit array length must be even.")
+
     # Map each pair of bits to a vector using gray coding
     re = -2*np.array(bits[::2]) + 1
     im = -2j*np.array(bits[1::2]) + 1j

@@ -13,7 +13,7 @@ void bind_carrier_recovery(pybind11::module_ &m) {
         m.def_submodule("carrier_recovery", "Carrier recovery algorithms");
 
     py::class_<sdrlib::carrier_recovery::CostasLoopQPSK>(carrier_recovery, "CostasLoopQPSK")
-        .def(py::init<float>(), py::arg("loop_bandwidth"))
+        .def(py::init<float, int>(), py::arg("loop_bandwidth"), py::arg("error_history_size") = 1024)
         .def("reset", &sdrlib::carrier_recovery::CostasLoopQPSK::reset)
         .def_property(
             "loop_bw",

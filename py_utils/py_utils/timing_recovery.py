@@ -35,41 +35,32 @@ class GardnerSymbolTimingCorrector(SymbolTimingCorrector):
         e = np.real((prev - next) * np.conj(curr))
         return e
 
-    def __init__(self, signal=None, control=None):
+    def __init__(self, control=None):
         self._farrow = CubicFarrowInterpolator()
         self.control = control if control else PIDFeedback(K_p=0.1)
-        self.signal = None
-        self.i = 0
-        self.mu = 0.5
-        self._offset = 0
-        self._pad_len = 2
-
-        self.mu_log = []
-        self.e_log = []
-
-        if signal is not None:
-            self.load_signal(signal)
+        self.reset()
 
     def reset(self):
         # Reset internal state
         self._farrow.reset()
         self.control.reset()
-        self.signal = None
+        self.signal = np.array([], dtype=np.complex64)
         self.mu = 0.5
-        self.i = self._pad_len
+        self.i = 0
+        self.SIG_SIZE = 0
         self._offset = 0
 
         self.mu_log = []
         self.e_log = []
 
     def load_signal(self, signal):
-        # Load signal and initialize Farrow buffer
+        # If length of signal is odd, pad to make even
+        if len(signal) % 2 != 0:
+            signal = np.append(signal, signal[-1])
+
         sig = np.asarray(signal, dtype=np.complex64)
-        pad = np.repeat(sig[-1], self._pad_len)
-        self.signal = np.concatenate((sig, pad))
-        self.SIG_SIZE = len(self.signal)
-        self._farrow.load(self.signal[:2])
-        self.i = self._pad_len
+        self.signal = np.append(self.signal, sig)
+        self.SIG_SIZE += len(self.signal)
 
     def process_symbol_pair(self):
         # Process pairs of samples. After two samples, record one output sample. 
@@ -82,16 +73,18 @@ class GardnerSymbolTimingCorrector(SymbolTimingCorrector):
         sample_out = None
         e = 0.0
 
-        for i in range(2):
+        for _ in range(2):
             # Interpolation is best when mu is close to 0.5 (i.e., center of buffer)
             # If mu drifts too far from 0.5, reset it and flip offset.
             # Use hysteresis to avoid rapid flipping around thresholds.
             H = 0.1
-            if self.mu > 0.5 + H:
-                self.mu = -0.5
+            lower = 0.2
+            upper = 1
+            if self.mu > upper + H:
+                self.mu = lower
                 self._offset = not self._offset
-            elif self.mu < -0.5 - H:
-                self.mu = 0.5
+            elif self.mu < lower - H:
+                self.mu = upper
                 self._offset = not self._offset
 
             # Add next sample to Farrow buffer 
@@ -100,7 +93,7 @@ class GardnerSymbolTimingCorrector(SymbolTimingCorrector):
             # Update fractional delay using PID controller every other sample.
             if self.i % 2 == self._offset:
                 e = GardnerSymbolTimingCorrector.ted(self.mu, self._farrow)
-                self.mu += self.control.update(e) 
+                self.mu += self.control.process(e) 
 
             else:
                 # Allow sample_out to be overwritten by second iteration if offset swaps
@@ -118,14 +111,22 @@ class GardnerSymbolTimingCorrector(SymbolTimingCorrector):
         return sample_out
 
     def process(self, signal=None):
+        # Check if signal is provided or already loaded
         if signal is not None:
             self.load_signal(signal)
         elif self.signal is None:
             raise ValueError("No input signal provided.")
 
+        # Process signal in pairs of samples
         out = []
         while self.i + 2 <= self.SIG_SIZE:
             out.append(self.process_symbol_pair())
+
+        # Delete processed samples from buffer to save memory
+        self.signal = self.signal[self.i:]
+        self.SIG_SIZE = len(self.signal)
+        self.i = 0
+        
         return np.array(out, dtype=np.complex64)
     
     def _increment(self, n=1):

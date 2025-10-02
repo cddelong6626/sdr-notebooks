@@ -10,7 +10,7 @@ void bind_control(pybind11::module_ &m) {
     py::class_<sdrlib::control::PIDFeedback>(control, "PIDFeedback")
         .def(py::init<float, float, float>(), py::arg("K_p") = 0.0f, py::arg("K_i") = 0.0f,
              py::arg("K_d") = 0.0f)
-        .def("update", &sdrlib::control::PIDFeedback::update)
+        .def("process", &sdrlib::control::PIDFeedback::process)
         .def("reset", &sdrlib::control::PIDFeedback::reset)
         .def_property("K_p", &sdrlib::control::PIDFeedback::get_Kp,
                       &sdrlib::control::PIDFeedback::set_Kp)
