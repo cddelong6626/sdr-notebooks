@@ -11,6 +11,8 @@ void bind_channel(pybind11::module_ &m) {
 
     py::module_ channel = m.def_submodule("channel", "Channel models and effects");
 
+    // Binding for apply_cfo function
+    // Use a lambda to handle numpy array inputs
     channel.def(
         "apply_cfo",
         [](py::array_t<sdrlib::cpx> pyarr_in, py::array_t<sdrlib::cpx> pyarr_out, float w_offset) {

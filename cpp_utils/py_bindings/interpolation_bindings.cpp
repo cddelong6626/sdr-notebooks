@@ -12,12 +12,28 @@ void bind_interpolation(pybind11::module_ &m) {
 
     py::module_ interpolation = m.def_submodule("interpolation", "Interpolation algorithms");
 
+    // Bindings for CubicFarrowInterpolator class
     py::class_<sdrlib::interpolation::CubicFarrowInterpolator>(interpolation,
                                                                "CubicFarrowInterpolator")
+        // Constructor
         .def(py::init<>())
+
+        // Internal buffer read-only property
+        // Use lambda to convert std::vector to numpy array
+        .def_property_readonly("buffer",
+                               [](sdrlib::interpolation::CubicFarrowInterpolator &self) {
+                                   sdrlib::cvec buffer = self.get_buffer();
+                                   return py::array_t<sdrlib::cpx>(buffer.size(), buffer.data());
+                               })
+
+        // Reset method
         .def("reset", &sdrlib::interpolation::CubicFarrowInterpolator::reset)
+
+        // Overloaded load methods.
+        // Use lambda for array input
         .def("load",
-             py::overload_cast<sdrlib::cpx>(&sdrlib::interpolation::CubicFarrowInterpolator::load))
+             py::overload_cast<sdrlib::cpx>(&sdrlib::interpolation::CubicFarrowInterpolator::load),
+             py::arg("sample"))
         .def("load",
              [](sdrlib::interpolation::CubicFarrowInterpolator &self,
                 py::array_t<sdrlib::cpx> pyarr_in) {
@@ -27,7 +43,13 @@ void bind_interpolation(pybind11::module_ &m) {
 
                  self.load(buf_in, size);
              })
-        .def("interpolate", &sdrlib::interpolation::CubicFarrowInterpolator::interpolate)
+
+        // Interpolate method
+        .def("interpolate", &sdrlib::interpolation::CubicFarrowInterpolator::interpolate,
+             py::arg("mu"), py::arg("int_off") = 0)
+
+        // Process method
+        // Use lambda to handle numpy arrays
         .def(
             "process",
             [](sdrlib::interpolation::CubicFarrowInterpolator &self,

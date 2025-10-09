@@ -12,18 +12,26 @@ void bind_carrier_recovery(pybind11::module_ &m) {
     py::module_ carrier_recovery =
         m.def_submodule("carrier_recovery", "Carrier recovery algorithms");
 
+    // Bindings for CostasLoopQPSK class
     py::class_<sdrlib::carrier_recovery::CostasLoopQPSK>(carrier_recovery, "CostasLoopQPSK")
-        .def(py::init<float, int>(), py::arg("loop_bandwidth"), py::arg("error_history_size") = 1024)
+
+        // Constructor
+        .def(py::init<float, int>(), py::arg("loop_bandwidth"),
+             py::arg("error_history_size") = 1024)
+
+        // Reset method
         .def("reset", &sdrlib::carrier_recovery::CostasLoopQPSK::reset)
+
+        // Property for loop bandwidth
         .def_property(
             "loop_bw",
-            [](sdrlib::carrier_recovery::CostasLoopQPSK &self) {
-                return self.get_loop_bw();
-            },
+            [](sdrlib::carrier_recovery::CostasLoopQPSK &self) { return self.get_loop_bw(); },
             [](sdrlib::carrier_recovery::CostasLoopQPSK &self, float value) {
                 self.set_loop_bw(value);
-            }
-        )
+            })
+
+        // Read-only properties for error history and current correction
+        // Use lambda to convert std::vector to numpy array
         .def_property_readonly("error_history",
                                [](sdrlib::carrier_recovery::CostasLoopQPSK &self) {
                                    sdrlib::fvec error_history = self.get_error_history();
@@ -32,14 +40,9 @@ void bind_carrier_recovery(pybind11::module_ &m) {
                                })
         .def_property_readonly("correction",
                                &sdrlib::carrier_recovery::CostasLoopQPSK::get_correction)
-        .def(
-            "process_sample",
-            [](sdrlib::carrier_recovery::CostasLoopQPSK &self, sdrlib::cpx symbol_in) {
-                sdrlib::cpx symbol_out;
-                self.process_sample(symbol_in, symbol_out);
-                return symbol_out;
-            },
-            py::arg("symbol_in"))
+
+        // Process a block of samples
+        // Use lambda to handle output parameter
         .def(
             "process",
             [](sdrlib::carrier_recovery::CostasLoopQPSK &self, py::array_t<sdrlib::cpx> pyarr_in,
@@ -53,5 +56,5 @@ void bind_carrier_recovery(pybind11::module_ &m) {
 
                 self.process(buf_in, buf_out, size);
             },
-            py::arg("buffer_in"), py::arg("buffer_out"));
+            py::arg("buffer_in"), py::arg("buffer_out")); // n is inferred from array size
 }

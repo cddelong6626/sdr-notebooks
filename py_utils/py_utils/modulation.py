@@ -1,7 +1,5 @@
 
-from numba import jit, njit
 import numpy as np
-import numpy.typing as npt
 
 
 def modulate_qpsk(bits):

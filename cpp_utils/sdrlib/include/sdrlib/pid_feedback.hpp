@@ -5,7 +5,6 @@
 
 namespace sdrlib::control {
 
-
 /**
  * @class PIDFeedback
  * @brief Simple PID feedback controller used for loop control tasks.

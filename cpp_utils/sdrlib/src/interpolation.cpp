@@ -6,13 +6,13 @@
 
 namespace sdrlib::interpolation {
 
+sdrlib::cvec CubicFarrowInterpolator::get_buffer() const { return buffer; }
+
 void CubicFarrowInterpolator::reset() {
     // Clear the buffer back to zeros
     buffer_idx = 0;
-    buffer.ringbuf_write(buffer_idx, 0.0f);
-    buffer.ringbuf_write(buffer_idx, 0.0f);
-    buffer.ringbuf_write(buffer_idx, 0.0f);
-    buffer.ringbuf_write(buffer_idx, 0.0f);
+    for (int i = 0; i < N_TAPS; ++i)
+        buffer.ringbuf_write(buffer_idx, 0.0f);
 }
 
 void CubicFarrowInterpolator::load(sdrlib::cpx sample) { buffer.ringbuf_write(buffer_idx, sample); }

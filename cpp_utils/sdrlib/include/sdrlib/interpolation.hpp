@@ -49,6 +49,12 @@ class CubicFarrowInterpolator {
     CubicFarrowInterpolator(){};
 
     /**
+     * @brief Get the internal interpolator buffer.
+     * @return const sdrlib::cvec The interpolator buffer.
+     */
+    sdrlib::cvec get_buffer() const;
+
+    /**
      * @brief Reset the internal state of the interpolator.
      *
      * Clears the ring buffer and resets the internal buffer_idx to its initial state.
