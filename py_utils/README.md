@@ -34,10 +34,6 @@ pip install -e .
 
 Once this project has been installed, it can be imported as `py_utils`. 
 
-### End-to-End QPSK Example
-
-See this full pipeline and its output in [notebooks/example.ipynb](../notebooks/example.ipynb).
-
 #### Imports
 ```python
 import py_utils as pu
