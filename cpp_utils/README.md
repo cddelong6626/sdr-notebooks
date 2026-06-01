@@ -27,14 +27,10 @@ This project contains high-performance C++ implementations of SDR algorithms, wi
 ```sh
 sudo apt update
 sudo apt install -y clang ninja-build cmake libgtest-dev libeigen3-dev pybind11-dev
-# For KFR DSP library, follow instructions at https://www.kfrlib.com/
+# For KFR DSP library, follow instructions at https://www.kfrlib.com/ to add KFR to your vcpkg packages
 ```
 
-**Note:** Before building, set the `KFR_PATH` environment variable to the location of your KFR DSP library installation's 'KFRConfig.cmake' file, as required by `./run_build`. For example:
-
-```sh
-export KFR_PATH=/path/to/kfr/targets/lib/cmake/kfr
-```
+**Note:** Before building, set the `VCPKG_ROOT` environment variable to the location of your vcpkg installation, as required by `./run_build`.
 
 After building, Python bindings are automatically added to the python site-packages of your current python env as the module `py_sdrlib` by the build script.
 
